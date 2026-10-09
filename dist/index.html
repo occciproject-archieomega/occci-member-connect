@@ -6,13 +6,14 @@
 <title>OCCCI Member Connect</title>
 <link rel="manifest" href="manifest.json"><link rel="icon" type="image/svg+xml" href="icon.svg"><link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preload" href="fonts/Poppins-Regular.woff" as="font" type="font/woff" crossorigin><link rel="stylesheet" href="styles.css?v=logo-6"><script src="app.js?v=logo-6" defer></script>
+<script src="supabase-config.js?v=sb-1" defer></script><script src="supabase-account.js?v=sb-1" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <aside class="sidebar" id="sidebar" aria-label="Main navigation"></aside>
 <div class="workspace">
 <header class="topbar" id="topbar"></header>
-<div class="demo-bar"><span class="demo-label">DESIGN PREVIEW</span><span>Sample data · Changes stay in this session</span><button onclick="openPreviewInfo()" aria-label="About this preview">About</button></div>
+<div class="demo-bar"><span class="demo-label">DESIGN PREVIEW</span><span>Sample data · Changes stay in this session</span><button onclick="openSupabaseAccount()">Member account</button><button onclick="openPreviewInfo()" aria-label="About this preview">About</button></div>
 <main id="main" tabindex="-1"></main>
 <footer>Metro Ormoc Community Multi-Purpose Cooperative <span>OCCCI Member Connect · UI / UX preview</span></footer>
 </div>
