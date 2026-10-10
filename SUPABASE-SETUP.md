@@ -2,6 +2,12 @@
 
 Target project: `hlxcltqnlypptbykirzi`. Production app: https://occci-member-connect.vercel.app/
 
+## Production state verified on 2026-10-10
+
+Migration 004 is applied to project `hlxcltqnlypptbykirzi`. The live database reports the activity and Google onboarding RPCs installed and the last-Admin assignment guard present. An authenticated Admin assignment save succeeded in a rollback-only live transaction, leaving no test assignment or audit changes. Production Site URL and the allowed redirect URL are both `https://occci-member-connect.vercel.app/`.
+
+Frontend assets are deployed from commit `408eb05` and were byte-compared to the tested source. Local frontend and PostgreSQL workflow tests pass. Google sign-in is still disabled because the project's Google client ID is not configured; complete the private provider setup below. Live Google consent and mobile-device testing remain pending.
+
 ## Apply the database changes
 
 If the earlier Supabase connection already works, run **supabase/migrations/002_workflow.sql**, then **supabase/migrations/003_staff_signup.sql**, then **supabase/migrations/004_activity_google.sql** in the Supabase SQL Editor. For a fresh project, run **supabase/install.sql** instead. The migrations run their changes in transactions. Do not rerun the legacy setup.sql alone after upgrading: it contains the former role policies.
