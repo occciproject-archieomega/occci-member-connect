@@ -1,12 +1,12 @@
 import vm from 'node:vm';import fs from 'node:fs';import assert from 'node:assert/strict';
 const nodes=new Map();const node=id=>{if(!nodes.has(id))nodes.set(id,{innerHTML:'',style:{},open:false,showModal(){this.open=true},close(){this.open=false}});return nodes.get(id)};
 const ctx=vm.createContext({window:{OCCCI_SUPABASE_CONFIG:{url:'https://example.invalid',publishableKey:'test'},scrollTo(){}},document:{getElementById:node,querySelectorAll:()=>[]},navigator:{},localStorage:{getItem:()=>null},console,setTimeout,Date,URL});
-vm.runInContext(fs.readFileSync('dist/ui.js','utf8')+'\n'+fs.readFileSync('dist/reports.js','utf8')+'\n'+fs.readFileSync('dist/app.js','utf8').replace(/init\(\);\s*$/,''),ctx);
+vm.runInContext(fs.readFileSync('dist/ui.js','utf8')+'\n'+fs.readFileSync('dist/reports.js','utf8')+'\n'+fs.readFileSync('dist/staff-invites.js','utf8')+'\n'+fs.readFileSync('dist/app.js','utf8').replace(/init\(\);\s*$/,''),ctx);
 const run=s=>vm.runInContext(s,ctx);
 run(`S.branches=[{id:'BR-01',name:'Ormoc',district:1,active:true},{id:'BR-11',name:'Alang-Alang',district:2,active:true}];S.authMode='register';render()`);
 const auth=node('main').innerHTML;
 for(const field of ['last_name','first_name','middle_name','contact_number','address','district','branch_id','email','password','photo'])assert(auth.includes('name="'+field+'"'));
-assert(auth.includes('value="Member"'));assert(auth.includes('value="Staff"'));assert(auth.includes('name="requested_role"'));assert(auth.includes('Branch Manager (BM)'));assert(auth.includes('District Manager (DM)'));
+assert(auth.includes('value="Member"'));assert(!auth.includes('value="Staff"'));assert(!auth.includes('name="requested_role"'));assert(!auth.includes('OCCCI Staff'));assert(!auth.includes('Branch Manager (BM)'));
 assert.equal((auth.match(/name="avatar"/g)||[]).length,6);assert.equal((auth.match(/class="avatar-art"/g)||[]).length,6);assert(!auth.includes('Alang-Alang</option>'),'Initial branches must belong to selected district');
 assert.equal(run(`registrationOptions(2).includes('Alang-Alang')`),true);
 assert.equal(run(`memberMatches({full_name:'Maria Santos',account_number:'OCC-100'},'occ-100')`),true);
@@ -27,18 +27,17 @@ for(const page of ['Home','Accounts','Community','Activity','Profile'])run(`S.pa
 run(`S.role='Admin';S.assignment={role:'Admin'}`);for(const page of ['Overview','Members','Approvals','Financial sync','Content','Activity','Team','Branches'])run(`S.page='${page}';render()`);
 console.log('PASS: registration fields and visual avatars, district branches, typo/account search, schedule validation, role-specific review controls, Branches last, empty financial states and all CMS/member views.');
 
-run(`S.role='Member';S.me.registration_kind='Staff';S.applications=[{user_id:'staff',requested_role:'BM',district:1,branch_id:'BR-01',status:'Pending'}];S.page='Home';render()`);assert(node('main').innerHTML.includes('Your OCCCI Staff application'));assert(!node('bottomnav').innerHTML.includes('Accounts'));run(`S.role='Admin';S.page='Team';render()`);assert(node('main').innerHTML.includes('Review application'));console.log('PASS: dual signup choices, staff requested positions, applicant status and Admin review queue.');
+run(`S.role='Member';S.me.registration_kind='Staff';S.applications=[{user_id:'staff',requested_role:'BM',district:1,branch_id:'BR-01',status:'Pending'}];S.page='Home';render()`);assert(node('main').innerHTML.includes('Your OCCCI Staff application'));assert(!node('bottomnav').innerHTML.includes('Accounts'));run(`S.role='Admin';S.page='Team';render()`);assert(node('main').innerHTML.includes('Review application'));console.log('PASS: member-only public signup, applicant status and Admin review queue.');
 ctx.fetch=async()=>({ok:false,json:async()=>({code:'42501'})});
 ctx.FormData=class extends Map{constructor(form){super(Object.entries(form.values));}};
 node('staffRoleField').querySelector=()=>node('requestedRoleSelect');
 ctx.form={values:{registration_kind:'Staff',requested_role:'DM',district:'1',branch_id:'BR-01',first_name:'Archie',last_name:'Omega',middle_name:'E',contact_number:'09123456789',address:'Ormoc City, Leyte',avatar:'man',email:'applicant@example.invalid',password:'test-password'},querySelector:()=>({disabled:false}),reset(){}};
 run(`var capturedSignup;api=async(path,options)=>{capturedSignup={path,options};return {}};S.authMode='register'`);
 await run('submitAuth(form)');
-assert.equal(run('capturedSignup.options.data.data.registration_kind'),'Staff');assert.equal(run('capturedSignup.options.data.data.requested_role'),'DM');assert.equal(run('capturedSignup.options.data.data.district'),1);assert.equal(run('capturedSignup.options.data.data.branch_id'),'BR-01');
+assert.equal(run('capturedSignup.options.data.data.registration_kind'),'Member');assert.equal(run('capturedSignup.options.data.data.requested_role'),undefined);assert.equal(run('capturedSignup.options.data.data.district'),1);assert.equal(run('capturedSignup.options.data.data.branch_id'),'BR-01');
 ctx.form.values.registration_kind='Member';await run('submitAuth(form)');assert.equal(run('capturedSignup.options.data.data.registration_kind'),'Member');assert.equal(run('capturedSignup.options.data.data.requested_role'),undefined);
-console.log('PASS: actual signup submission sends application intent and assignment, while Member signup omits staff-role requests.');
+console.log('PASS: public signup always submits Member even with spoofed Staff form values, and omits role requests.');
 
-ctx.form.values.registration_kind='Staff';ctx.fetch=async()=>({ok:false,json:async()=>({code:'PGRST205'})});run('capturedSignup=null');await run('submitAuth(form)');assert.equal(run('capturedSignup'),null);assert(node('authMessage').textContent.includes('awaiting database activation'));console.log('PASS: staff signup is blocked before Auth account creation when its migration is missing.');
 // Team scope selectors and canonical save payloads.
 run(`S.branches=[{id:'BR-01',name:'Ormoc',district:1,active:true},{id:'BR-11',name:'Alang-Alang',district:2,active:true},{id:'BR-16',name:'Tacloban',district:2,active:true},{id:'BR-OLD',name:'Inactive',district:2,active:false}];`);
 const district2=run(`teamBranchOptions(2,'BR-16')`);assert(district2.includes('Alang-Alang'));assert(district2.includes('Tacloban'));assert(!district2.includes('Ormoc'));assert(!district2.includes('Inactive'));assert(district2.includes('value="BR-16" selected'));

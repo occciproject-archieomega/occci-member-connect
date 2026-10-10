@@ -2,8 +2,8 @@
 
 Responsive installable PWA for Metro Ormoc Community Multi-Purpose Cooperative, with a member app and a role-scoped cooperative CMS. Uses bundled Poppins fonts, OCCCI branding and six visual temporary avatars. Static HTML/CSS/JavaScript; no build step.
 
-- Admin → District Manager → Branch Manager → Staff → Member, with database-enforced district/branch assignments.
-- Separate Member/OCCCI Staff signup, Admin-reviewed DM/BM/Staff applications, and a one-time verified-email developer Admin bootstrap.
+- Admin → District Manager → Branch Manager → Staff / Branch Cashier (BC) → Member, with database-enforced district/branch assignments.
+- Member-only public registration; private, code-verified employee invitations; Admin-assigned Admin/DM/BM/Staff/BC positions; and a one-time verified-email developer Admin bootstrap.
 - Full member registration, email confirmation and membership verification with unique official account numbers.
 - Staff request permission → BM or DM approval → one logged profile edit.
 - Multiple private original documents (PDF, Word, Excel, scans or other files) → DM review → Admin approval → savings/loan snapshot synchronization.
@@ -46,10 +46,23 @@ The CMS header has four approval portals: Staff Applications (Admin only), New M
 
 Member search supports name matching, exact account/user IDs, district and branch filters, and name/account/district/branch sorting. Record update logs use 20 rows per page; returning to an open edit form preserves values and selected documents.
 
-Reports is available to Admin, DM, BM and Staff. Staff receives a personal My Reports page. Staff saves a daily, seven-day weekly or calendar-month report with actual transaction totals and private source documents, then submits it to the assigned BM. BM approval publishes an immutable approved record to the managerial report register. Returned reports can be corrected and resubmitted. Every action is recorded in scoped report logs.
+Reports is available to Admin, DM, BM, Staff and BC. Staff and BC receive a personal My Reports page. Staff saves a daily, seven-day weekly or calendar-month report with actual transaction totals and private source documents, then submits it to the assigned BM. BM approval publishes an immutable approved record to the managerial report register. Returned reports can be corrected and resubmitted. Every action is recorded in scoped report logs.
 
 Admin sees all locations. DM sees assigned district branches. BM sees the assigned branch. Managers have savings/credit snapshots, daily/weekly/monthly CMS activity and approved staff transaction summaries, report status, CSV exports, and registers for assembly, district and cluster reports. The Annual compliance tab has been removed. Daily/weekly/monthly totals are calculated separately. Approved member snapshots are not historical accounting ledgers or audited financial statements. The app does not submit filings to CDA.
 
 Apply `supabase/migrations/006_reports.sql` after migration 005. It is repeatable and adds report types, managerial registers, staff staging, immutable events and private `occci-reports` storage. Members have no report access. Staff has access only to their own work reports. Files are limited to 10, 10 MB each, 50 MB total.
 
 Verification: `node tests/frontend-workflow.mjs`, `node tests/cms-form-submission.mjs`, `node tests/reports-frontend.mjs`, `node tests/database-workflow.mjs`, `node tests/reports-workflow.mjs`. DOM tests require jsdom; database tests require @electric-sql/pglite, with `JSDOM_MODULE` / `PGLITE_MODULE` pointing to their modules when installed outside the repo.
+
+## Admin-invited employee registration
+
+Apply `supabase/migrations/007_staff_invitations.sql` after 006 on an existing project. Use `supabase/install.sql` for a fresh database; use only the new migration for an upgrade. Migration 007 is transactional and repeatable, preserves existing users/assignments/applications, and disables the old requested-position approval endpoint. Existing pending applications require an employee ID and an Admin-selected position when reviewed.
+
+1. Admin opens **Settings → Generate staff invitation**, enters an internal label, validity (1–30 days) and reason/comments/notes. The dialog shows a private registration link and an independent code once. Copy both and give them separately to the employee. Admin can revoke an unused invitation in Settings.
+2. The employee opens the HTTPS link in any browser and verifies the code. Google or verified email sign-in identifies the account in a separate step; the employee application asks only for last/first/optional middle name, employee number/ID, contact number and a photo or one of the six visual avatars.
+3. Submission consumes the invitation once and creates a pending application without any requested role or scope. It grants no CMS access. Admin reviews it in **Staff Applications** and assigns Admin (global), DM (district), or BM/Staff/BC (branch), or rejects it with notes.
+4. Approved BC users have branch-scoped operational access like Staff: permission-first profile corrections, original-document submissions and personal work reports sent to BM. BC cannot assign roles or approve staff/report applications. Member accounts and employee IDs remain separate identifiers.
+
+Only a salted SHA-256 code digest is stored. Admin can read invitation metadata, never its code/hash. The application revalidates the code, expiry and revocation inside the transaction that consumes it. Codes never appear in URLs, auth metadata or audit snapshots. Verified invitation context is kept in tab session storage for up to 30 minutes to survive Google PKCE and is cleared after submission/cancellation.
+
+Additional verification: `node tests/staff-invitations-frontend.mjs` (jsdom) and `node tests/staff-invitations-workflow.mjs` (@electric-sql/pglite). These cover invalid/expired/revoked/used invitations, employee ID uniqueness, no public staff self-registration, approval and role escalation boundaries, all five assigned positions, BC branch/report workflows, and the private registration form.
