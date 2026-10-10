@@ -25,3 +25,5 @@ PGLITE_MODULE=/tmp/occci-sql-test/node_modules/@electric-sql/pglite/dist/index.j
 ```
 
 The PostgreSQL checks use local minimal Supabase schema stubs. Real email delivery, device photo handling, signed storage links and live authenticated acceptance require verification in the configured Supabase project.
+
+The latest upgrade adds district-first Branch Directory, unified reason/comments/notes fields, cooperative-wide audit visibility for Admin/DM/BM, safe assignment saving, and Google PKCE sign-in with required profile completion. Apply `supabase/migrations/004_activity_google.sql` after migration 003 and enable the Google provider as described in [SUPABASE-SETUP.md](SUPABASE-SETUP.md). Google OAuth credentials belong in Supabase provider settings, never in frontend code.

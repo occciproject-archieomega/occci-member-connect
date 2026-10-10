@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 const {PGlite}=await import(process.env.PGLITE_MODULE||'@electric-sql/pglite');
 const db=new PGlite();
 await db.exec(`create role anon;create role authenticated;create schema auth;create schema storage;
-create table auth.users(id uuid primary key,raw_user_meta_data jsonb,email text,email_confirmed_at timestamptz default now());
+create table auth.users(id uuid primary key,raw_user_meta_data jsonb,raw_app_meta_data jsonb default '{}',email text,email_confirmed_at timestamptz default now());
 create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
 create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
 create table storage.objects(id uuid default gen_random_uuid(),bucket_id text,name text);
@@ -102,4 +102,38 @@ await db.exec(migration);await db.query('update auth.users set email_confirmed_a
 assert.equal((await db.query('select * from public.occci_staff_assignments where user_id=$1',[developer])).rows.length,0,'Removed bootstrap must not reappear on rerun or Auth update');
 await reject(attacker,'select public.occci_bootstrap_developer($1)',[attacker],/permission denied/);
 console.log('PASS: staff signup stays unprivileged, Admin-only confirmed staff approvals, correct DM scope, verified-email bootstrap, metadata spoof rejection, and permanent bootstrap revocation.');
+
+// Migration 004: cooperative-wide audit reads do not expand profile access.
+const migration4=fs.readFileSync('supabase/migrations/004_activity_google.sql','utf8');await db.exec(migration4);await db.exec(migration4);
+await as(admin,()=>db.query('select public.occci_manage_record($1,$2,$3,$4,$5)',['Team',other,{role:'Staff',branch_id:'BR-11'},false,'District two employee assigned']));
+await as(other,()=>db.query('select public.occci_approve_member($1,$2,$3)',[other,'OCC-D2','District two documents verified']));
+for(const manager of [admin,dm,bm])await as(manager,async()=>{const logs=(await db.query('select * from public.occci_activity()')).rows;assert(logs.some(x=>x.note==='District two documents verified'));assert(logs.some(x=>x.actor===other&&x.actor_name==='Maria Santos'&&x.actor_role==='Staff'));});
+await as(dm,async()=>assert(!(await db.query('select * from public.occci_profiles')).rows.some(x=>x.id===other),'Cross-district logs do not grant profile edits or directory access'));
+await as(staff,async()=>assert(!(await db.query('select * from public.occci_activity()')).rows.some(x=>x.note==='District two documents verified')));
+await as(member,async()=>assert((await db.query('select * from public.occci_activity()')).rows.every(x=>x.member_id===member)));
+await db.exec('set role anon');await assert.rejects(db.query('select public.occci_activity()'),/permission denied/);await db.exec('reset role');
+// Last Admin remains protected; self-demotion is permitted once another Admin exists.
+await reject(admin,'select public.occci_manage_record($1,$2,$3,$4,$5)',['Team',admin,{role:'DM',district:1},false,'Test my district role'],/Keep at least one Admin/);
+await as(admin,()=>db.query('select public.occci_manage_record($1,$2,$3,$4,$5)',['Team',admin,{role:'Admin',branch_id:'BR-11',district:2},false,'Save my global Admin scope']));
+assert.equal((await db.query('select branch_id from public.occci_staff_assignments where user_id=$1',[admin])).rows[0].branch_id,null);
+await as(admin,()=>db.query('select public.occci_manage_record($1,$2,$3,$4,$5)',['Team',second,{role:'Admin'},false,'Assign permanent backup Admin']));
+await as(admin,()=>db.query('select public.occci_manage_record($1,$2,$3,$4,$5)',['Team',admin,{role:'DM',district:1},false,'Test my district manager access']));
+assert.equal((await db.query('select role from public.occci_staff_assignments where user_id=$1',[admin])).rows[0].role,'DM');
+await reject(second,'select public.occci_manage_record($1,$2,$3,$4,$5)',['Team',second,{},true,'Remove last Admin'],/Keep at least one Admin/);
+await as(second,()=>db.query('select public.occci_manage_record($1,$2,$3,$4,$5)',['Team',admin,{role:'Admin'},false,'Restore global administrator access']));
+// Trusted OAuth signup can be incomplete; client metadata cannot imitate its provider.
+const google='00000000-0000-4000-8000-000000000012';
+await db.query('insert into auth.users(id,raw_user_meta_data,raw_app_meta_data,email) values($1,$2,$3,$4)',[google,{full_name:'Google Person',role:'Admin'},{provider:'google'},'google@example.invalid']);
+let gp=(await db.query('select * from public.occci_profiles where id=$1',[google])).rows[0];assert.equal(gp.branch_id,null);assert.equal(gp.onboarding_complete,false);
+await reject(admin,'select public.occci_manage_record($1,$2,$3,$4,$5)',['Team',google,{role:'Admin'},false,'Incomplete user role'],/completed profile/);
+await assert.rejects(db.query('insert into auth.users(id,raw_user_meta_data,email) values($1,$2,$3)',['00000000-0000-4000-8000-000000000013',{provider:'google',role:'Admin'},'spoof@example.invalid']),/Complete the required/);
+await reject(google,'select public.occci_complete_onboarding($1)',[{...meta,branch_id:'BR-11',district:1}],/selected district/);
+await reject(google,'select public.occci_complete_onboarding($1)',[{...meta,registration_kind:'Staff',requested_role:'Admin'}],/valid requested staff/);
+await as(google,()=>db.query('select public.occci_complete_onboarding($1)',[{...meta,registration_kind:'Staff',requested_role:'BM',role:'Admin',account_number:'spoof',membership_status:'Active'}]));
+gp=(await db.query('select * from public.occci_profiles where id=$1',[google])).rows[0];assert.equal(gp.onboarding_complete,true);assert.equal(gp.membership_status,'Pending verification');assert.equal(gp.account_number,null);assert.equal(gp.registration_kind,'Staff');
+await as(google,async()=>assert.equal((await db.query('select public.occci_role() role')).rows[0].role,'Member'));
+assert.equal((await db.query('select requested_role from public.occci_staff_applications where user_id=$1',[google])).rows[0].requested_role,'BM');
+await reject(google,'select public.occci_complete_onboarding($1)',[meta],/not awaiting/);
+console.log('PASS: repeatable 004, cooperative-wide manager logs with actor names and roles, restricted Staff/member logs and profiles, safe self-assignment and last-Admin protection, trusted Google onboarding, validation and no self-granted staff privileges.');
+
 await db.close();

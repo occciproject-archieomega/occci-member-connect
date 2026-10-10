@@ -4,11 +4,11 @@ Target project: `hlxcltqnlypptbykirzi`. Production app: https://occci-member-con
 
 ## Apply the database changes
 
-If the earlier Supabase connection already works, run **supabase/migrations/002_workflow.sql**, then **supabase/migrations/003_staff_signup.sql** in the Supabase SQL Editor. For a fresh project, run **supabase/install.sql** instead. Both files run their changes in transactions. Do not rerun the legacy setup.sql alone after upgrading: it contains the former role policies.
+If the earlier Supabase connection already works, run **supabase/migrations/002_workflow.sql**, then **supabase/migrations/003_staff_signup.sql**, then **supabase/migrations/004_activity_google.sql** in the Supabase SQL Editor. For a fresh project, run **supabase/install.sql** instead. The migrations run their changes in transactions. Do not rerun the legacy setup.sql alone after upgrading: it contains the former role policies.
 
 The workflow migration preserves old branch Admin assignments as BM and old Admin Head assignments as cooperative Admin. A migration marker prevents this conversion from running again. Existing profiles remain pending unless already approved; complete legacy missing names/contact/address through the authorized edit workflow. Existing Active profiles without official account numbers must be reconciled in the SQL Editor before financial use.
 
-In Authentication → URL Configuration, set Site URL to `https://occci-member-connect.vercel.app` and allow that URL for email confirmation redirects. Email confirmation remains required. Google/Facebook are deliberately deferred.
+In Authentication → URL Configuration, set Site URL to `https://occci-member-connect.vercel.app` and allow that URL for email confirmation redirects. Email confirmation remains required. Google sign-in is supported after the setup below. Facebook remains deferred.
 
 ## Temporary developer Admin and staff signup
 
@@ -44,7 +44,7 @@ Sign out and sign back in. Admin can assign DM (district), BM (branch), and Staf
 2. Sign in as a BM or Staff assigned to that branch. Find the pending member in Members, verify actual membership documents, and assign their unique official ID/account number. Admin can also approve. Other branches and Members cannot approve.
 3. Staff proposes a member correction with a reason. A different BM (or Admin) reviews it. The requesting Staff applies the approved exact proposal once. Changes to the underlying profile invalidate stale proposals.
 4. Staff uploads an actual private PDF/JPG/PNG and proposes savings, loan balance/status, annual interest, record date, source reference and payment schedule. A different DM in the district reviews it; a different Admin gives final approval. Only then does the current member financial snapshot change. Stale simultaneous submissions are rejected.
-5. Confirm the member sees their own approved snapshot, schedule and activity. Verify a member in another branch cannot see those records. CMS shows activity for authorized branches. Audit entries retain before/after values and reviewers.
+5. Confirm the member sees their own approved snapshot, schedule and activity. Verify a member in another branch cannot see those records. Admin, DM and BM see cooperative-wide activity; Staff sees branch activity; members see their own activity. This does not expand manager profile-edit or document access. Audit entries retain before/after values and reviewers.
 6. Manage announcements/events/services with branch/district/cooperative scope. Published applicable content appears in the member app; drafts stay in CMS scope. Admin can manage the database branch directory and team assignments. Branches is the last navigation item.
 
 ## Data and deletion
@@ -60,3 +60,23 @@ The browser uses a public Supabase publishable key. Sensitive reads are protecte
 ## Verification
 
 `node tests/frontend-workflow.mjs` checks rendering logic, registration fields/avatars, name/account search and role review controls. `tests/database-workflow.mjs` runs actual PostgreSQL via PGlite with minimal local Supabase Auth/Storage schema stubs. It checks migrations, permissions, branch isolation, approval sequences, account uniqueness, one-time edits and stale financial proposals. These are local checks; finish the acceptance walkthrough against the real project after applying SQL. The publishable key cannot apply schema migrations, and the live authenticated workflows cannot be verified before that step.
+
+## Current upgrade: notes, saving, logs and Google sign-in
+
+For the existing production database, run **supabase/migrations/004_activity_google.sql** after 003. This enables the activity RPC, actor name/role snapshots, manager access to all districts’ audit logs, safe self-assignment changes and Google profile completion. The publishable browser key cannot apply SQL or change Auth provider settings.
+
+All CMS notes inputs use **Reason / Comments / Notes** and save to the existing audited note fields. Team saves canonicalize Admin to global scope, DM to district, and BM/Staff to an active branch. Editing locks the selected identity. New assignments require confirmed email and a completed profile. An Admin can save their own assignment, but cannot demote/remove the last remaining Admin. Assign another Admin before testing your own DM/BM/Staff access; a self-demotion changes your workspace immediately.
+
+Branch Directory opens with district cards and branch counts. Selecting a district shows its branches. Add branch defaults to that district. The database directory remains the source of truth.
+
+### Enable Google in the project dashboard
+
+1. In Google Auth Platform, create a **Web application** OAuth client. Add `https://occci-member-connect.vercel.app` as an authorized JavaScript origin. Add `https://hlxcltqnlypptbykirzi.supabase.co/auth/v1/callback` as the authorized redirect URI. Configure the consent screen and, if in testing, add allowed test users.
+2. In Supabase project `hlxcltqnlypptbykirzi`, go to **Authentication → Sign In / Providers → Google**, enable Google, and enter the Google client ID and client secret privately. Save. Never put the client secret in the frontend or public Git repository.
+3. Under **Authentication → URL Configuration**, set Site URL and allowed redirect URL to `https://occci-member-connect.vercel.app/`. Add each intended preview/local URL separately when testing.
+4. Open the app, select **Continue with Google**, and complete Google consent. The app uses PKCE, exchanges the returned code, and removes it from the URL. Finish in the same browser tab where sign-in started.
+5. New Google accounts must complete name, contact, address, district/branch and avatar/photo details. Choose Member or apply for Staff/DM/BM. Google confirmation does not grant staff roles, approve membership, or generate an official account number. Existing linked users retain their current assignments.
+
+Before provider activation the Google button reports that setup is pending and email sign-in stays available. If 004 is missing, Google signup is blocked before redirect; existing email users can still read activity with the earlier RLS policies until the migration is applied.
+
+Verify saving with both a valid assignment and a last-Admin demotion attempt. Verify an out-of-district Staff action appears to Admin/DM/BM but not another branch’s Staff or unrelated members. Older audit rows resolve actor names where available; role snapshots are captured for new actions only. Activity loading pages through all accessible entries instead of cutting off at 250.
