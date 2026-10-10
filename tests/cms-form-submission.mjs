@@ -22,10 +22,33 @@ const docs=[{name:'ledger.xlsx',size:1024},{name:'form.docx',size:2048}];w.valid
 // Exercise the actual multi-file handler with native File/FormData objects.
 w.eval(`S.role='Staff';S.profiles[0].membership_status='Active';S.profiles[0].account_number='OCCCI-0002'`);
 const NativeFormData=w.FormData;const originalFiles=[new w.File(['ledger'],'ledger.xlsx',{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),new w.File(['form'],'form.docx',{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})];
-w.FormData=class extends NativeFormData{constructor(form){super(form);if(form.elements.evidence){this.delete('evidence');for(const file of originalFiles)this.append('evidence',file);}}};
-w.syncDialog('member');await w.handleCmsAction(w.document.querySelector('form'),'sync','member');assert.equal(calls.at(-1).path,'/rest/v1/rpc/occci_submit_financial_documents');assert.equal(calls.at(-1).data.documents.length,2);assert(calls.at(-1).data.documents[0].path.endsWith('.xlsx'));assert(calls.at(-1).data.documents[1].path.endsWith('.docx'));assert.equal(calls.at(-1).data.values_json.source_reference,'ledger.xlsx; form.docx');
+w.syncDialog('member');
+function addFiles(files){const input=w.document.querySelector('[name=evidence]');Object.defineProperty(input,'files',{configurable:true,value:files});w.showSelectedDocuments(input);}
+addFiles([originalFiles[0]]);addFiles([originalFiles[1]]);
+assert.equal(w.document.querySelectorAll('#selectedDocuments li').length,2,'Selections accumulate');
+assert.equal(w.document.querySelector('#documentCount').textContent,'2 / 10 files');
+assert.equal(w.document.querySelector('.document-remove').type,'button');
+w.document.querySelector('.document-remove').click();
+assert.equal(w.document.querySelectorAll('#selectedDocuments li').length,1);
+assert(w.document.querySelector('#selectedDocuments').textContent.includes('form.docx'));
+addFiles([originalFiles[0]]);
+addFiles(Array.from({length:8},(_,i)=>new w.File(['test'],`record-${i}.pdf`)));
+assert.equal(w.document.querySelectorAll('#selectedDocuments li').length,10);
+assert(w.document.querySelector('.document-add').disabled);
+addFiles([new w.File(['extra'],'extra.pdf')]);
+assert.equal(w.document.querySelectorAll('#selectedDocuments li').length,10);
+assert(!w.document.querySelector('#documentError').hidden);
+w.removeSelectedDocument(w.document.querySelector('form'),9);
+assert(!w.document.querySelector('.document-add').disabled);
+for(let i=8;i>=2;i--)w.removeSelectedDocument(w.document.querySelector('form'),i);
+addFiles([{name:'oversize.pdf',size:11*1024*1024}]);
+assert.equal(w.document.querySelectorAll('#selectedDocuments li').length,2,'Invalid selections preserve the draft');
+// Removed files must not be uploaded; accumulated actual File objects must be uploaded.
+await w.handleCmsAction(w.document.querySelector('form'),'sync','member');assert.equal(calls.at(-1).path,'/rest/v1/rpc/occci_submit_financial_documents');assert.equal(calls.at(-1).data.documents.length,2);assert(calls.at(-1).data.documents[0].path.endsWith('.docx'));assert(calls.at(-1).data.documents[1].path.endsWith('.xlsx'));assert.equal(calls.at(-1).data.values_json.source_reference,'form.docx; ledger.xlsx');
+w.syncDialog('member');const beforeEmpty=calls.length;await w.handleCmsAction(w.document.querySelector('form'),'sync','member');assert.equal(calls.length,beforeEmpty);assert(w.document.getElementById('actionMessage').textContent.includes('1 to 10'));
+addFiles(originalFiles);w.api=async()=>{throw Error('Temporary upload failure');};await w.handleCmsAction(w.document.querySelector('form'),'sync','member');assert.equal(w.document.querySelectorAll('#selectedDocuments li').length,2);assert(!w.document.querySelector('.document-add').disabled);assert(!w.document.querySelector('.document-remove').disabled);
 w.FormData=NativeFormData;w.api=async()=>{throw Error('This account number is already assigned.');};w.membershipDialog('member');await submit({account:'OCCCI-0002',reason:'Check duplicate recovery'});assert(w.document.getElementById('actionMessage').textContent.includes('already assigned'));assert(!w.document.querySelector('button[type=submit]').disabled);
 // Confirm the original collision independently, without real requests or data.
 const oldErrors=[];const oldVc=new VirtualConsole();oldVc.on('jsdomError',e=>oldErrors.push(e));const old=new JSDOM('<form onsubmit="event.preventDefault();action(this)"><button>Confirm</button></form><script>function action(){}</script>',{runScripts:'dangerously',virtualConsole:oldVc});old.window.document.querySelector('form').requestSubmit();assert(oldErrors.some(e=>e.message.includes('action is not a function')),'Reproduce original browser form-property collision');
-console.log('PASS: native form submission for approval/archive/ID assignment, original action collision reproduced, Staff permission before fields, approved edit RPC, DM review, multiple files and limits.');
+console.log('PASS: native form submission for approval/archive/ID assignment, original action collision reproduced, Staff permission before fields, approved edit RPC, DM review, cumulative multi-file selection, remove buttons, 10-file boundary, empty/oversize validation, exact submitted files and upload-error retry.');
 dom.window.close();old.window.close();
