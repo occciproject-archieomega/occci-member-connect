@@ -39,3 +39,18 @@ ctx.form.values.registration_kind='Member';await run('submitAuth(form)');assert.
 console.log('PASS: actual signup submission sends application intent and assignment, while Member signup omits staff-role requests.');
 
 ctx.form.values.registration_kind='Staff';ctx.fetch=async()=>({ok:false,json:async()=>({code:'PGRST205'})});run('capturedSignup=null');await run('submitAuth(form)');assert.equal(run('capturedSignup'),null);assert(node('authMessage').textContent.includes('awaiting database activation'));console.log('PASS: staff signup is blocked before Auth account creation when its migration is missing.');
+// Team scope selectors and canonical save payloads.
+run(`S.branches=[{id:'BR-01',name:'Ormoc',district:1,active:true},{id:'BR-11',name:'Alang-Alang',district:2,active:true},{id:'BR-16',name:'Tacloban',district:2,active:true},{id:'BR-OLD',name:'Inactive',district:2,active:false}];`);
+const district2=run(`teamBranchOptions(2,'BR-16')`);assert(district2.includes('Alang-Alang'));assert(district2.includes('Tacloban'));assert(!district2.includes('Ormoc'));assert(!district2.includes('Inactive'));assert(district2.includes('value="BR-16" selected'));
+node('teamRole').value='Admin';run('teamRoleChanged()');assert.equal(node('teamDistrictField').hidden,true);assert.equal(node('teamBranchField').hidden,true);assert.equal(node('teamDistrict').disabled,true);assert.equal(node('teamBranch').disabled,true);
+node('teamRole').value='DM';run('teamRoleChanged()');assert.equal(node('teamDistrictField').hidden,false);assert.equal(node('teamDistrict').required,true);assert.equal(node('teamBranchField').hidden,true);assert.equal(node('teamBranch').disabled,true);
+node('teamRole').value='BM';node('teamDistrict').value='2';node('teamBranch').value='BR-01';run('teamRoleChanged()');assert.equal(node('teamDistrictField').hidden,false);assert.equal(node('teamBranchField').hidden,false);assert.equal(node('teamBranch').required,true);assert(!node('teamBranch').innerHTML.includes('BR-01'));assert(!node('teamBranch').innerHTML.includes('selected'),'Mismatched old branch must be cleared to placeholder');
+node('teamBranch').value='BR-16';run('teamDistrictChanged()');assert(node('teamBranch').innerHTML.includes('value="BR-16" selected'),'Valid existing assignment must be preserved');
+node('teamRole').value='Staff';run('teamRoleChanged()');assert.equal(node('teamBranchField').hidden,false);
+const payload=s=>JSON.parse(JSON.stringify(run(s)));
+assert.deepEqual(payload(`teamAssignmentValues({role:'Admin',district:'2',branch_id:'BR-16'})`),{role:'Admin',district:null,branch_id:null});
+assert.deepEqual(payload(`teamAssignmentValues({role:'DM',district:'2',branch_id:'BR-01'})`),{role:'DM',district:2,branch_id:null});
+assert.deepEqual(payload(`teamAssignmentValues({role:'BM',district:'2',branch_id:'BR-16'})`),{role:'BM',district:null,branch_id:'BR-16'});
+assert.throws(()=>run(`teamAssignmentValues({role:'Staff',district:'1',branch_id:'BR-16'})`));assert.throws(()=>run(`teamAssignmentValues({role:'BM',district:'2',branch_id:'BR-OLD'})`));
+run(`S.team=[{user_id:'staff',role:'BM',branch_id:'BR-16',district:null}];teamDialog('staff')`);assert(node('modalContent').innerHTML.includes('value="2" selected'));assert(!node('modalContent').innerHTML.includes('value="BR-01"'),'Edited BM dialog derives district from its assigned branch');
+console.log('PASS: role-dependent team fields, district-filtered active branches, clearing invalid branches, preserving edited scope, and canonical assignment validation.');
