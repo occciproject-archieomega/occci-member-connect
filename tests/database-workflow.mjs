@@ -136,4 +136,33 @@ assert.equal((await db.query('select requested_role from public.occci_staff_appl
 await reject(google,'select public.occci_complete_onboarding($1)',[meta],/not awaiting/);
 console.log('PASS: repeatable 004, cooperative-wide manager logs with actor names and roles, restricted Staff/member logs and profiles, safe self-assignment and last-Admin protection, trusted Google onboarding, validation and no self-granted staff privileges.');
 
+
+// 005: manager approvals, branch-scoped IDs, permission-first Staff editing and private multi-file records.
+const migration5=fs.readFileSync('supabase/migrations/005_member_documents.sql','utf8');await db.exec(migration5);await db.exec(migration5);
+await reject(staff,'select public.occci_manage_record($1,$2,$3,$4,$5)',['Member',member,profile,false,'Direct staff edit'],/Staff must request/);
+await as(dm,()=>db.query('select public.occci_assign_account($1,$2,$3)',[member,'OCC-101','Official ID correction']));
+await reject(staff,'select public.occci_assign_account($1,$2,$3)',[other,'OCC-102','Wrong branch'],/not permitted/);
+await reject(member,'select public.occci_assign_account($1,$2,$3)',[member,'OCC-103','Self number'],/not permitted/);
+await reject(staff,'select public.occci_assign_account($1,$2,$3)',[second,'occ-101','Duplicate number'],/already assigned/);
+const newly='00000000-0000-4000-8000-000000000014';await db.query('insert into auth.users(id,raw_user_meta_data,email) values($1,$2,$3)',[newly,meta,'newmember@example.invalid']);
+await as(staff,()=>db.query('select public.occci_assign_account($1,$2,$3)',[newly,'OCC-104','ID before approval']));assert.equal((await db.query('select membership_status from public.occci_profiles where id=$1',[newly])).rows[0].membership_status,'Pending verification');
+await as(dm,()=>db.query('select public.occci_approve_member($1,$2,$3)',[newly,'OCC-104','District verification']));assert.equal((await db.query('select membership_status from public.occci_profiles where id=$1',[newly])).rows[0].membership_status,'Active');
+const permission=(await as(staff,()=>db.query('select public.occci_submit_change($1,$2,$3,$4,$5) id',[member,'Profile edit',{permission_only:true},null,'Need contact correction']))).rows[0].id;
+await reject(staff,'select public.occci_apply_authorized_edit($1,$2,$3)',[permission,profile,'Edit before approval'],/Wait for BM or DM/);
+await as(dm,()=>db.query('select public.occci_review_change($1,$2,$3)',[permission,'Approve','DM verified edit need']));
+await reject(staff,'select public.occci_apply_edit($1)',[permission],/approved edit/);
+await as(staff,()=>db.query('select public.occci_apply_authorized_edit($1,$2,$3)',[permission,{...profile,address:'Approved new address in Ormoc City'},'Corrected from official form']));
+await reject(staff,'select public.occci_apply_authorized_edit($1,$2,$3)',[permission,profile,'Reuse permission'],/Wait for BM or DM/);
+const files=[{path:staff+'/ledger.xlsx',name:'Original ledger.xlsx',size:2048,type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},{path:staff+'/member.docx',name:'Original form.docx',size:1024,type:'application/octet-stream'}];
+for(const file of files)await as(staff,()=>db.query('insert into storage.objects(bucket_id,name) values($1,$2)',['occci-documents',file.path]));
+await reject(staff,'select public.occci_submit_financial_documents($1,$2,$3,$4)',[member,finance,[{...files[0],path:other+'/unknown.pdf'}],'Wrong original'],/private folder/);
+const bundle=(await as(staff,()=>db.query('select public.occci_submit_financial_documents($1,$2,$3,$4) id',[member,finance,files,'Original records attached']))).rows[0].id;
+await as(dm,async()=>assert.equal((await db.query('select * from storage.objects where name=$1',[files[1].path])).rows.length,1));
+await as(other,async()=>assert.equal((await db.query('select * from storage.objects where name=$1',[files[1].path])).rows.length,0));
+await as(dm,()=>db.query('select public.occci_review_change($1,$2,$3)',[bundle,'Approve','DM checked all originals']));await as(admin,()=>db.query('select public.occci_review_change($1,$2,$3)',[bundle,'Approve','Admin checked originals']));assert.equal((await db.query('select evidence_files from public.occci_financials where member_id=$1',[member])).rows[0].evidence_files.length,2);
+await reject(staff,'select public.occci_manage_record($1,$2,$3,$4,$5)',['Member',newly,{},true,'Staff archives'],/Staff must request/);
+await as(admin,()=>db.query('select public.occci_manage_record($1,$2,$3,$4,$5)',['Member',newly,{},true,'Duplicate member archived']));assert((await db.query('select archived_at from public.occci_profiles where id=$1',[newly])).rows[0].archived_at);assert((await db.query('select * from public.occci_audit where member_id=$1 and action=$2',[newly,'Member archived'])).rows.length);
+assert.equal((await db.query("select allowed_mime_types from storage.buckets where id='occci-documents'")).rows[0].allowed_mime_types,null);
+console.log('PASS: repeatable 005, DM membership approval, IDs without activation and branch/case uniqueness, permission-first Staff edits with BM/DM review and single use, all private original documents survive financial approval, and archive preserves audit.');
+
 await db.close();

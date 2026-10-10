@@ -86,3 +86,11 @@ Branch Directory opens with district cards and branch counts. Selecting a distri
 Before provider activation the Google button reports that setup is pending and email sign-in stays available. If 004 is missing, Google signup is blocked before redirect; existing email users can still read activity with the earlier RLS policies until the migration is applied.
 
 Verify saving with both a valid assignment and a last-Admin demotion attempt. Verify an out-of-district Staff action appears to Admin/DM/BM but not another branch’s Staff or unrelated members. Older audit rows resolve actor names where available; role snapshots are captured for new actions only. Activity loading pages through all accessible entries instead of cutting off at 250.
+
+## Member approvals, edit permissions and original documents
+
+Run **supabase/migrations/005_member_documents.sql** after 004 on the existing database. It preserves existing one-file references, adds attachment manifests to requests and approved snapshots, accepts other original document formats in the private bucket, and expands existing branch-scoped manager rules to DM.
+
+Staff select Request information edit, enter a reason and wait. BM or DM (or Admin) approves in Approvals. The requesting Staff then opens the approved request and edits once. Requests are invalidated when member revision/scope changes. Older exact-change requests remain usable through their previous apply action. Direct Staff profile updates remain denied.
+
+Staff/BM/DM/Admin can assign or correct an official account number in their scope without activating membership. Approval assigns a number and activates pending membership; duplicate IDs are rejected without partial writes. Admin archive retains the profile and audit while removing it from active lists and revoking any staff assignment.
