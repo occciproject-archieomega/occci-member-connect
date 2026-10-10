@@ -251,5 +251,27 @@ body{font-family:Poppins,Arial,sans-serif;color:var(--text)}h1,h2,h3{font-weight
 
 .directory-name-position{font-size:11px;color:var(--muted);font-weight:600;white-space:normal}
 #adminPositionPasswordField small{font-size:11px;color:var(--muted);line-height:1.5}
+#workspaceTabs[hidden]{display:none}
+.team-workspace-tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line);margin:0 0 18px;padding:0 0 8px}
+.team-workspace-tabs button{display:flex;align-items:center;gap:8px;min-height:44px;padding:10px 16px;background:transparent;color:var(--muted);border-radius:6px;font-size:13px;font-weight:600}
+.team-workspace-tabs button[aria-pressed=true]{background:var(--navy);color:#fff}
+.team-section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.team-section-heading p{margin:0}
+.team-hierarchy-panel .card-head{gap:12px;align-items:center;margin-bottom:14px}
+.team-hierarchy-panel .card-head h2{font-size:18px;margin:0 0 4px}
+.team-hierarchy-panel .card-head p{margin:0}
+.team-role-tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:14px}
+.team-role-tabs button{min-height:44px;font-size:12px;font-weight:600;padding:8px 12px;border-radius:5px;background:transparent;color:var(--muted)}
+.team-role-tabs button[aria-pressed=true]{background:#fff3bf;color:var(--navy)}
+.team-hierarchy-filters{display:grid;grid-template-columns:minmax(180px,1.4fr) minmax(140px,1fr) minmax(140px,1fr);gap:12px;margin-bottom:16px}
+.team-hierarchy-filters label{font-size:12px;margin:0}
+.team-hierarchy-filters input,.team-hierarchy-filters select{margin-bottom:0;min-height:44px;font-size:13px}
+.team-person-row{display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:12px;padding:10px 12px;background:#fff}
+.team-person-row+.team-person-row{border-top:1px solid var(--line)}
+.team-person-row>.avatar{width:38px;height:38px;flex-shrink:0}
+.team-person-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.team-person-actions button{min-height:44px;padding:8px 10px;font-size:12px}
+.team-person-actions .i{width:17px;height:17px}
+@media(max-width:650px){.team-workspace-tabs{gap:3px}.team-workspace-tabs button{padding:8px 10px;font-size:12px}.team-hierarchy-filters{grid-template-columns:1fr 1fr;gap:10px}.team-hierarchy-filters>label:first-child{grid-column:1/-1}.team-hierarchy-filters input,.team-hierarchy-filters select{font-size:16px;min-width:0;width:100%}.team-role-tabs button{flex:1 1 140px;padding:7px 9px}.team-hierarchy-panel .card-head{align-items:flex-start}.team-person-row{grid-template-columns:38px minmax(0,1fr);gap:8px 10px;padding:10px}.team-person-actions{grid-column:2;justify-content:flex-start}.team-person-actions button{flex:1}.team-section-heading{align-items:flex-start}}
 .final-approval-title{font-size:14px;margin:16px 0 8px}
 .financial-final-approval .primary:disabled{opacity:.55;cursor:not-allowed}

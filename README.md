@@ -10,7 +10,8 @@ Responsive installable PWA for Metro Ormoc Community Multi-Purpose Cooperative, 
 - Branch-filtered typo-tolerant name search and exact account-number lookup.
 - Editable CMS announcements/events/services, branch directory, team assignments and scoped activity logs.
 - Activity entries identify the affected member or employee as well as the acting user. Captured names, positions and employee IDs remain readable after role changes, transfers, profile renaming and archiving.
-- Staff directory names include their positions. BM/DM assignments and staff approvals require a fresh, single-use Admin password confirmation; saving a pending review grants no access.
+- Team contains the OCCCI Staff directory, Staff Applications and Cooperative Hierarchy. Hierarchy positions have district/branch filters, compact grouped rows and 20 assignments per page. Reports and Team omit the four banner approval shortcuts.
+- Staff directory names include their positions. Every Admin staff assignment, staff-application approval, assignment removal and account archive requires a fresh, single-use Admin password confirmation; saving a pending review grants no access.
 - No sample operational data or role simulation.
 
 Serve `dist/` over HTTP locally (`python -m http.server 3000 --directory dist`). Vercel configuration publishes `dist/` from the linked GitHub repository. Follow [SUPABASE-SETUP.md](SUPABASE-SETUP.md) to activate the database workflow; the browser publishable key cannot perform migrations.
@@ -106,3 +107,11 @@ PGLITE_MODULE=/tmp/occci-sql-test/node_modules/@electric-sql/pglite/dist/index.j
 JSDOM_MODULE=/tmp/occci-dom-test/node_modules/jsdom/lib/api.js node tests/branch-approval-frontend.mjs
 ```
 The database suite uses non-production fixtures and covers scope isolation through tables, RPCs and private original documents, Auth email mirroring, legacy migration, BM/DM stages, pending activation, no Admin approval, atomic publication and stale submissions. The native DOM suite covers review controls, activity tabs, counters, staff email, calendar controls and exact submission payloads. Earlier SQL suites retain their historical migration checks.
+
+## Team workspace and password confirmation upgrade
+
+Apply `supabase/migrations/012_all_staff_password_confirmation.sql` after 011 before publishing the `team-workspace-15` frontend. OCCCI Staff is now inside Team; member records remain in Members. Team sections separate the staff directory, application queue and hierarchy. Admin, DM, BM, Branch Staff (BS) and BC have individual hierarchy tabs within the reader's permitted district/branch scope. Choosing a district restricts branch choices. Position and location changes retain independent paging and logged review rules.
+
+All staff positions now require Admin password re-entry in Team and on application approval. Removing an assignment and archiving an account also require confirmation. Removal confirmations bind to the current assignment and profile revision, so a changed account requires a fresh confirmation. Password sessions are single-use across assignments, removals and archives. Scope policies, the last-Admin rule, pending drafts and BM→DM financial approvals remain intact.
+
+`tests/team-workspace-frontend.mjs` verifies the relocated navigation, hidden banner shortcuts, position/location filters, scoped personnel, search and pagination through native clicks. `tests/position-confirmation-frontend.mjs` verifies native password dispatch for all positions and removals. `tests/branch-approval-workflow.mjs` tests the full migrations through 012 against actual local PostgreSQL, including direct-API blocking, all position approvals, action binding, stale removal/archive prevention, the last-Admin rule and audit preservation.
