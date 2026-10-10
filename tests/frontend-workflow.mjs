@@ -28,6 +28,7 @@ run(`S.role='Admin';S.assignment={role:'Admin'}`);for(const page of ['Overview',
 console.log('PASS: registration fields and visual avatars, district branches, typo/account search, schedule validation, role-specific review controls, Branches last, empty financial states and all CMS/member views.');
 
 run(`S.role='Member';S.me.registration_kind='Staff';S.applications=[{user_id:'staff',requested_role:'BM',district:1,branch_id:'BR-01',status:'Pending'}];S.page='Home';render()`);assert(node('main').innerHTML.includes('Your OCCCI Staff application'));assert(!node('bottomnav').innerHTML.includes('Accounts'));run(`S.role='Admin';S.page='Team';render()`);assert(node('main').innerHTML.includes('Review application'));console.log('PASS: dual signup choices, staff requested positions, applicant status and Admin review queue.');
+ctx.fetch=async()=>({ok:false,json:async()=>({code:'42501'})});
 ctx.FormData=class extends Map{constructor(form){super(Object.entries(form.values));}};
 node('staffRoleField').querySelector=()=>node('requestedRoleSelect');
 ctx.form={values:{registration_kind:'Staff',requested_role:'DM',district:'1',branch_id:'BR-01',first_name:'Archie',last_name:'Omega',middle_name:'E',contact_number:'09123456789',address:'Ormoc City, Leyte',avatar:'man',email:'applicant@example.invalid',password:'test-password'},querySelector:()=>({disabled:false}),reset(){}};
@@ -36,3 +37,5 @@ await run('submitAuth(form)');
 assert.equal(run('capturedSignup.options.data.data.registration_kind'),'Staff');assert.equal(run('capturedSignup.options.data.data.requested_role'),'DM');assert.equal(run('capturedSignup.options.data.data.district'),1);assert.equal(run('capturedSignup.options.data.data.branch_id'),'BR-01');
 ctx.form.values.registration_kind='Member';await run('submitAuth(form)');assert.equal(run('capturedSignup.options.data.data.registration_kind'),'Member');assert.equal(run('capturedSignup.options.data.data.requested_role'),undefined);
 console.log('PASS: actual signup submission sends application intent and assignment, while Member signup omits staff-role requests.');
+
+ctx.form.values.registration_kind='Staff';ctx.fetch=async()=>({ok:false,json:async()=>({code:'PGRST205'})});run('capturedSignup=null');await run('submitAuth(form)');assert.equal(run('capturedSignup'),null);assert(node('authMessage').textContent.includes('awaiting database activation'));console.log('PASS: staff signup is blocked before Auth account creation when its migration is missing.');
