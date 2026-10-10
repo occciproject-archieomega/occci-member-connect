@@ -4,15 +4,31 @@ Target project: `hlxcltqnlypptbykirzi`. Production app: https://occci-member-con
 
 ## Apply the database changes
 
-If the earlier Supabase connection already works, run **supabase/migrations/002_workflow.sql** in the Supabase SQL Editor. For a fresh project, run **supabase/install.sql** instead. Both files run their changes in transactions. Do not rerun the legacy setup.sql alone after upgrading: it contains the former role policies.
+If the earlier Supabase connection already works, run **supabase/migrations/002_workflow.sql**, then **supabase/migrations/003_staff_signup.sql** in the Supabase SQL Editor. For a fresh project, run **supabase/install.sql** instead. Both files run their changes in transactions. Do not rerun the legacy setup.sql alone after upgrading: it contains the former role policies.
 
 The workflow migration preserves old branch Admin assignments as BM and old Admin Head assignments as cooperative Admin. A migration marker prevents this conversion from running again. Existing profiles remain pending unless already approved; complete legacy missing names/contact/address through the authorized edit workflow. Existing Active profiles without official account numbers must be reconciled in the SQL Editor before financial use.
 
 In Authentication → URL Configuration, set Site URL to `https://occci-member-connect.vercel.app` and allow that URL for email confirmation redirects. Email confirmation remains required. Google/Facebook are deliberately deferred.
 
-## Assign the first cooperative Admin
+## Temporary developer Admin and staff signup
 
-Register and confirm the intended administrator's email through the app. In the project's trusted SQL Editor, replace the example email and run:
+The existing project already has the workflow schema. Run **supabase/migrations/003_staff_signup.sql** to add staff applications and the developer bootstrap. Configure its target privately in SQL Editor before running the migration:
+
+```sql
+select set_config('occci.bootstrap_email','REPLACE_WITH_VERIFIED_DEVELOPER_EMAIL',false);
+```
+
+Paste that statement and the migration into the same SQL Editor execution. The public repository intentionally contains no personal developer email. If the migration was run without a target, rerun it with this configuration; an unused empty bootstrap can be configured, while a consumed bootstrap is never restored.
+
+- The privately configured, verified developer email receives temporary Admin access. If that account already exists and its email is confirmed, the migration activates Admin immediately. Otherwise register using **Cooperative Member**, confirm the email and sign in; the trusted Auth confirmation trigger activates Admin. No password or new Auth user is created by the migration.
+- This is a one-time, revocable grant, with no arbitrary expiry date. When setup is finished, assign a permanent cooperative Admin in Team. That Admin removes the developer assignment. Re-running the migration, signing in again or changing Auth metadata never restores the consumed bootstrap.
+- Registration offers **Cooperative Member** and **OCCCI Staff**. Staff selects a requested DM/BM/Staff position, district and branch. Everyone supplies full profile details and can use the six visual avatars/photo upload. Staff signup is an application and does not self-grant CMS access.
+- Admin reviews pending staff applications in **CMS → Team → Staff applications**, approves/rejects with a note, and sees the decision in activity logs. Applicant email confirmation is mandatory for approval. DM gets district access; BM and Staff get the approved branch. Applicants can see their status and review note; after approval, Refresh status or sign-in opens their authorized CMS.
+- Staff-role approval and member account-number approval remain separate. Staff applicants are excluded from the member verification directory and membership metrics. Admin can adjust or remove approved assignments from Team.
+
+## Assign a permanent cooperative Admin
+
+The temporary developer Admin can assign a permanent Admin in CMS → Team. Alternatively, register and confirm the intended administrator's email through the app. In the project's trusted SQL Editor, replace the example email and run:
 
 ```sql
 insert into public.occci_staff_assignments(user_id,role,branch_id,district)
@@ -20,7 +36,7 @@ select id,'Admin',null,null from auth.users where email='REPLACE_WITH_ADMIN_EMAI
 on conflict(user_id) do update set role='Admin',branch_id=null,district=null;
 ```
 
-Sign out and sign back in. Admin can assign DM (district), BM (branch), and Staff (branch) from CMS → Team. Staff privileges never come from signup metadata. Admin is also the GM approval role requested in this version; GM is not a separate sixth role.
+Sign out and sign back in. Admin can assign DM (district), BM (branch), and Staff (branch) from CMS → Team. Requested staff positions in signup metadata remain unprivileged until reviewed by Admin. Admin is also the GM approval role requested in this version; GM is not a separate sixth role.
 
 ## Acceptance walkthrough
 

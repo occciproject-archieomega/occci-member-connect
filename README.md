@@ -3,6 +3,7 @@
 Responsive installable PWA for Metro Ormoc Community Multi-Purpose Cooperative, with a member app and a role-scoped cooperative CMS. Uses bundled Poppins fonts, OCCCI branding and six visual temporary avatars. Static HTML/CSS/JavaScript; no build step.
 
 - Admin → District Manager → Branch Manager → Staff → Member, with database-enforced district/branch assignments.
+- Separate Member/OCCCI Staff signup, Admin-reviewed DM/BM/Staff applications, and a one-time verified-email developer Admin bootstrap.
 - Full member registration, email confirmation and membership verification with unique official account numbers.
 - Staff profile proposals → BM approval → single logged application.
 - Actual source documents → DM review → Admin approval → savings/loan snapshot synchronization.
