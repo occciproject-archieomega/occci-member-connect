@@ -2,11 +2,11 @@
 
 Responsive installable PWA for Metro Ormoc Community Multi-Purpose Cooperative, with a member app and a role-scoped cooperative CMS. Uses bundled Poppins fonts, OCCCI branding and six visual temporary avatars. Static HTML/CSS/JavaScript; no build step.
 
-- Admin → District Manager → Branch Manager → Staff / Branch Cashier (BC) → Member, with database-enforced district/branch assignments.
+- Admin → District Manager → Branch Manager → Branch Staff (BS) / Branch Cashier (BC) → Member, with database-enforced district/branch assignments.
 - Member-only public registration; private, code-verified employee invitations; Admin-assigned Admin/DM/BM/Staff/BC positions; and a one-time verified-email developer Admin bootstrap.
 - Full member registration, email confirmation and membership verification with unique official account numbers.
 - Staff request permission → BM or DM approval → one logged profile edit.
-- Multiple private original documents (PDF, Word, Excel, scans or other files) → DM review → Admin approval → savings/loan snapshot synchronization.
+- Multiple private original documents (PDF, Word, Excel, scans or other files) → BM screening → assigned DM approval → savings/loan snapshot synchronization.
 - Branch-filtered typo-tolerant name search and exact account-number lookup.
 - Editable CMS announcements/events/services, branch directory, team assignments and scoped activity logs.
 - No sample operational data or role simulation.
@@ -26,11 +26,11 @@ PGLITE_MODULE=/tmp/occci-sql-test/node_modules/@electric-sql/pglite/dist/index.j
 
 The PostgreSQL checks use local minimal Supabase schema stubs. Real email delivery, device photo handling, signed storage links and live authenticated acceptance require verification in the configured Supabase project.
 
-The latest upgrade adds district-first Branch Directory, unified reason/comments/notes fields, cooperative-wide audit visibility for Admin/DM/BM, safe assignment saving, and Google PKCE sign-in with required profile completion. Apply `supabase/migrations/004_activity_google.sql` after migration 003 and enable the Google provider as described in [SUPABASE-SETUP.md](SUPABASE-SETUP.md). Google OAuth credentials belong in Supabase provider settings, never in frontend code.
+The latest upgrade adds district-first Branch Directory, unified reason/comments/notes fields, scoped audit visibility for Admin/DM/BM (enforced by migration 009), safe assignment saving, and Google PKCE sign-in with required profile completion. Apply `supabase/migrations/004_activity_google.sql` after migration 003 and enable the Google provider as described in [SUPABASE-SETUP.md](SUPABASE-SETUP.md). Google OAuth credentials belong in Supabase provider settings, never in frontend code.
 
 ## Member/document upgrade
 
-Migration `005_member_documents.sql` enables DM membership approval, branch-scoped ID assignment for Staff/BM/DM/Admin, permission-first Staff profile editing and multiple original attachments. ID assignment alone does not activate membership. Archive is an Admin soft archive with activity retained. Native form tests reproduce and prevent the `form.action` handler-name collision that blocked CMS submissions.
+Migration `005_member_documents.sql` introduced membership and document operations. Migration 009 now requires BM screening followed by assigned DM activation, with branch-scoped ID assignment for BS/BC/BM/DM, permission-first Staff profile editing and multiple original attachments. ID assignment alone does not activate membership. Archive is an Admin soft archive with activity retained. Native form tests reproduce and prevent the `form.action` handler-name collision that blocked CMS submissions.
 
 Original supporting files remain private: up to 10 files per request, 10 MB per file and 50 MB total. Reviewers see every original filename; approved snapshots retain all attachments. The optional record reference is a ledger/form/statement label and defaults to filenames. Documents download through short-lived signed links.
 
@@ -72,10 +72,35 @@ Additional verification: `node tests/staff-invitations-frontend.mjs` (jsdom) and
 
 Apply `supabase/migrations/008_staff_review_drafts.sql` after 007 before deploying this update. **Save and Approve** grants the selected role through the existing approval endpoint. **Save as Pending** stores the position, workplace, employee ID and notes in a review draft; the applicant remains Pending, the submitted profile stays intact, and no staff assignment is created. Reopening the application restores the draft. Both actions are recorded in the activity log. Rejection can also be prepared without finalizing it.
 
-The visible position name is **Branch Staff**; the stored role identifier remains `Staff` so existing permissions and assignments continue to work. **Members** lists cooperative members; **OCCCI Staff** lists approved personnel with their employee IDs and assigned workplaces. Pending employee applications remain in Staff Applications.
+The visible position name is **Branch Staff (BS)**; the stored role identifier remains `Staff` so existing permissions and assignments continue to work. **Members** lists cooperative members; **OCCCI Staff** lists approved personnel with their employee IDs and assigned workplaces. Pending employee applications remain in Staff Applications.
 
 Financial sync includes members without a snapshot, including pending member registrations. These rows say **No financial records yet. Update and verification required.** Membership approval and an official account number remain prerequisites for balance submissions. Verified zero balances are displayed as zero; missing records never imply a zero savings balance or an absence of loans. Member records use 20 rows per page and retain branch scope.
 
-Review actions are visible for the eligible DM at Pending and for a different Admin at DM approved. Submitters cannot approve their own submissions. Stage explanations are visible to other readers. Final synchronization and verified snapshot dialogs are read-only; updated balances require a fresh document submission. File references and downloads remain private.
+Review actions are visible for the assigned BM at Pending and for the assigned district DM at BM approved. Admin has read-only access to membership and financial approvals. BS/BC submissions require BM screening; a BM-originated balance submission records its screening and goes to an independent DM for final approval. Stage explanations are visible to other readers. Final synchronization and verified snapshot dialogs are read-only; updated balances require a fresh document submission. File references and downloads remain private.
 
 Additional checks: `node tests/staff-financial-workflow.mjs` (jsdom) and the extended staff-invitations SQL suite. Supabase email registration uses the [documented PKCE signup fields](https://github.com/supabase/auth/blob/master/openapi.yaml) only when email confirmation is enabled.
+
+
+## Current branch approval workflow (009)
+
+Apply `supabase/migrations/009_branch_approval_workflow.sql` **after 008 and before publishing the matching frontend**. This transactional, repeatable migration supersedes the earlier membership and financial approval rules. It narrows profile, activity, report and original-document access on the server; browser filters alone are not the permission boundary.
+
+- Admin reads all districts, approves employee applications and assigns positions. Admin cannot approve new members, submit financial balances or finalize financial synchronization.
+- DM reads only their assigned district and finalizes BM-screened membership/financial requests from its branches.
+- BM reads only their assigned branch and screens its new members and financial submissions.
+- BS/BC read only their branch's member/financial records and maintain their own branch work reports. Profile corrections remain permission-first.
+- New membership stays Pending and the proposed official account number stays in the screening request until the assigned DM approves. Editing a pending member's status cannot bypass activation.
+- DM financial approval writes the verified savings, loan status, interest, payment schedule and original references atomically. The member profile displays that verified snapshot. Stale revisions and same-person final reviews are rejected.
+
+Unfinished legacy financial requests (`Pending` / `DM approved` under workflow version 1) return to BM screening. Earlier DM reviews are retained in a scoped migration event; no balance is published automatically. Completed snapshots stay intact. Reapplying 009 does not reset requests under the current workflow.
+
+CMS activity provides All, Admin, DM, BM, BS and BC tabs with date sorting and 20 entries per page, within the reader's permitted scope. Active notification counts are orange; zero counts remain gray. Staff directories and application reviews display the Auth-derived email; user metadata cannot spoof it. The duplicate cooperative name at the bottom of the sidebar is removed.
+
+The payment editor uses date pickers and editable rows. Generate weekly, fortnightly, monthly or quarterly installments; successive generations append, and rows can be edited or removed. Monthly installments preserve the first due-day, clamping only shorter months, including leap years. Up to 360 payments are accepted and validated before document upload. No financial snapshot means “Not recorded,” not a fabricated zero.
+
+Current workflow verification:
+```sh
+PGLITE_MODULE=/tmp/occci-sql-test/node_modules/@electric-sql/pglite/dist/index.js node tests/branch-approval-workflow.mjs
+JSDOM_MODULE=/tmp/occci-dom-test/node_modules/jsdom/lib/api.js node tests/branch-approval-frontend.mjs
+```
+The database suite uses non-production fixtures and covers scope isolation through tables, RPCs and private original documents, Auth email mirroring, legacy migration, BM/DM stages, pending activation, no Admin approval, atomic publication and stale submissions. The native DOM suite covers review controls, activity tabs, counters, staff email, calendar controls and exact submission payloads. Earlier SQL suites retain their historical migration checks.

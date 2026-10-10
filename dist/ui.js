@@ -5,8 +5,8 @@ const logo=()=>'<span class="logo"><img src="occci-logo.png" alt="OCCCI logo"></
 const e=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=n=>new Intl.NumberFormat('en-PH',{style:'currency',currency:'PHP',maximumFractionDigits:2}).format(n);
 const dateText=d=>new Date(d+'T12:00:00').toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'});
-const roleLabel=role=>role==='Staff'?'Branch Staff':String(role||'Member');
-const statusPill=s=>`<span class="pill ${/Pending|Submitted|review|Requested|Open|Awaiting|Records required/.test(s)?'pending':/Declined|Cancelled/.test(s)?'red':/Active|Scheduled/.test(s)?'blue':''}">${e(s)}</span>`;
+const roleLabel=role=>role==='Staff'?'Branch Staff (BS)':String(role||'Member');
+const statusPill=s=>`<span class="pill ${/Pending|Submitted|review|Requested|Open|Awaiting|Records required/.test(s)?'pending':/Declined|Cancelled|Rejected|Suspended/.test(s)?'red':/Active|Scheduled/.test(s)?'blue':''}">${e(s)}</span>`;
 const button=(label,action,cls='',ico='')=>`<button class="${cls}" onclick="${action}" ${!label?`aria-label="${ico==='close'?'Close dialog':ico==='menu'?'Open menu':'Refresh workspace'}"`: ''}>${ico?icon(ico):''}${label}</button>`;
 const heading=(title,sub,actions='')=>`<div class="page-heading"><div><h1>${title}</h1><p>${sub}</p></div>${actions}</div>`;
 const empty=(title,sub,action='',ico='file')=>`<div class="empty"><div class="iconbox">${icon(ico)}</div><h3>${title}</h3><p>${sub}</p>${action}</div>`;

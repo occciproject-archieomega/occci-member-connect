@@ -2,7 +2,7 @@
 const STAFF_INVITE_KEY='occci.staff.invitation.v1';
 const STAFF_SIGNUP_KEY='occci.staff.signup.pkce.v1';
 const STAFF_ROLES=['Admin','DM','BM','Staff','BC'];
-const STAFF_ROLE_LABELS={Admin:'Admin',DM:'District Manager (DM)',BM:'Branch Manager (BM)',Staff:'Branch Staff',BC:'Branch Cashier (BC)'};
+const STAFF_ROLE_LABELS={Admin:'Admin',DM:'District Manager (DM)',BM:'Branch Manager (BM)',Staff:'Branch Staff (BS)',BC:'Branch Cashier (BC)'};
 function isOperationalStaff(){return ['Staff','BC'].includes(S.role);}
 function rememberStaffInvite(){try{if(S.staffInvite?.verified)sessionStorage.setItem(STAFF_INVITE_KEY,JSON.stringify({id:S.staffInvite.id,code:S.staffInvite.code,until:Date.now()+30*60*1000}));else sessionStorage.removeItem(STAFF_INVITE_KEY);}catch{}}
 function staffSignupFlow(){try{const flow=JSON.parse(localStorage.getItem(STAFF_SIGNUP_KEY)||'null');if(flow&&(!Number.isFinite(flow.created)||flow.created>Date.now()||Date.now()-flow.created>30*60*1000)){localStorage.removeItem(STAFF_SIGNUP_KEY);return null;}return flow;}catch{return null;}}

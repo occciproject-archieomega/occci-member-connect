@@ -4,7 +4,7 @@ Target project: `hlxcltqnlypptbykirzi`. Production app: https://occci-member-con
 
 ## Production state verified on 2026-10-10
 
-Migrations 002–007 are applied to project `hlxcltqnlypptbykirzi`. Migration 007 was activated on 2026-10-10. Live SQL checks returned true for the migration marker, the invited-application RPC, the Admin assignment RPC, private invitation hash privileges, invitation RLS and the BC role constraint. The upgrade does not create invitations, employees or role assignments automatically.
+Migrations 002–009 are applied to project `hlxcltqnlypptbykirzi`. Migration 009 was activated on 2026-10-10. Live SQL checks returned true for the migration marker, the exact BM membership screening and BM→DM approval procedure bodies, scoped profile/audit/report/work/document access, trusted email synchronization and the transition of unfinished legacy financial requests. The upgrade does not create invitations, employees or role assignments automatically.
 
 The frontend and database regression suites pass, including private staff invitation and Branch Cashier workflows. Production Site URL and the allowed OAuth redirect remain `https://occci-member-connect.vercel.app/`. Email sign-in identifies invited employees before the minimal employee application form; Google uses the existing provider when configured. Live Google consent and physical iOS/Android testing remain outside this verification.
 
@@ -28,8 +28,8 @@ Paste that statement and the migration into the same SQL Editor execution. The p
 
 - The privately configured, verified developer email receives temporary Admin access. If that account already exists and its email is confirmed, the migration activates Admin immediately. Otherwise register using **Cooperative Member**, confirm the email and sign in; the trusted Auth confirmation trigger activates Admin. No password or new Auth user is created by the migration.
 - This is a one-time, revocable grant, with no arbitrary expiry date. When setup is finished, assign a permanent cooperative Admin in Team. That Admin removes the developer assignment. Re-running the migration, signing in again or changing Auth metadata never restores the consumed bootstrap.
-- After migration 007, public registration offers **Cooperative Member only**. OCCCI employee registration requires an Admin-generated private link and separate single-use code. The employee provides a complete name, employee ID, contact and photo/visual avatar after a separate secure sign-in step. No applicant chooses a position or district/branch.
-- Admin generates/revokes invitations in **CMS → Settings** and reviews applications in **Staff Applications**. Admin approves/rejects with notes and assigns Admin (global), DM (district), or BM/Staff/BC (branch). Applicant email confirmation and a unique employee ID are required. Applicants see their status and review note; after approval, Refresh status or sign-in opens the authorized CMS.
+- After migration 007, public registration offers **Cooperative Member only**. OCCCI employee registration requires an Admin-generated private link and separate single-use code. The employee provides a complete name, employee ID, contact and photo/visual avatar after a separate account-registration step. No applicant chooses a position or district/branch.
+- Admin generates/revokes invitations in **CMS → Settings** and reviews applications in **Staff Applications**. Admin approves/rejects with notes and assigns Admin (global), DM (district), or BM/Branch Staff (BS)/BC (branch). Applicant email confirmation and a unique employee ID are required. Applicants see their status and review note; after approval, Refresh status or sign-in opens the authorized CMS.
 - Staff-role approval and member account-number approval remain separate. Staff applicants are excluded from the member verification directory and membership metrics. Admin can adjust or remove approved assignments from Team.
 
 ## Assign a permanent cooperative Admin
@@ -42,7 +42,7 @@ select id,'Admin',null,null from auth.users where email='REPLACE_WITH_ADMIN_EMAI
 on conflict(user_id) do update set role='Admin',branch_id=null,district=null;
 ```
 
-Sign out and sign back in. Admin can manage Admin (global), DM (district) and BM/Staff/BC (branch) from CMS → Team. Pending employee applications must be approved in Staff Applications first. User-editable Auth metadata cannot create staff access. Admin remains the final financial approval role; GM is not a separate role.
+Sign out and sign back in. Admin can manage Admin (global), DM (district) and BM/Branch Staff (BS)/BC (branch) from CMS → Team. Pending employee applications must be approved in Staff Applications first. User-editable Auth metadata cannot create staff access. Admin remains the final financial approval role; GM is not a separate role.
 
 ## Acceptance walkthrough
 
@@ -81,19 +81,19 @@ Branch Directory opens with district cards and branch counts. Selecting a distri
 2. In Supabase project `hlxcltqnlypptbykirzi`, go to **Authentication → Sign In / Providers → Google**, enable Google, and enter the Google client ID and client secret privately. Save. Never put the client secret in the frontend or public Git repository.
 3. Under **Authentication → URL Configuration**, set Site URL and allowed redirect URL to `https://occci-member-connect.vercel.app/`. Add each intended preview/local URL separately when testing.
 4. Open the app, select **Continue with Google**, and complete Google consent. The app uses PKCE, exchanges the returned code, and removes it from the URL. Finish in the same browser tab where sign-in started.
-5. New Google accounts must complete name, contact, address, district/branch and avatar/photo details. Choose Member or apply for Staff/DM/BM. Google confirmation does not grant staff roles, approve membership, or generate an official account number. Existing linked users retain their current assignments.
+5. New Google accounts must complete name, contact, address, district/branch and avatar/photo details. Public registration is Member-only. Employees use an Admin-generated invitation and code; Admin assigns their position. Google confirmation does not grant staff roles, approve membership, or generate an official account number. Existing linked users retain their current assignments.
 
 Before provider activation the Google button reports that setup is pending and email sign-in stays available. If 004 is missing, Google signup is blocked before redirect; existing email users can still read activity with the earlier RLS policies until the migration is applied.
 
-Verify saving with both a valid assignment and a last-Admin demotion attempt. Verify an out-of-district Staff action appears to Admin/DM/BM but not another branch’s Staff or unrelated members. Older audit rows resolve actor names where available; role snapshots are captured for new actions only. Activity loading pages through all accessible entries instead of cutting off at 250.
+Verify saving with both a valid assignment and a last-Admin demotion attempt. Verify an out-of-district action appears only to Admin and managers assigned to its district/branch. Verify both the activity table and activity RPC enforce these boundaries. Older audit rows resolve actor names where available; role snapshots are captured for new actions only. Activity loading pages through all accessible entries instead of cutting off at 250.
 
 ## Member approvals, edit permissions and original documents
 
 Run **supabase/migrations/005_member_documents.sql** after 004 on the existing database. It preserves existing one-file references, adds attachment manifests to requests and approved snapshots, accepts other original document formats in the private bucket, and expands existing branch-scoped manager rules to DM.
 
-Staff select Request information edit, enter a reason and wait. BM or DM (or Admin) approves in Approvals. The requesting Staff then opens the approved request and edits once. Requests are invalidated when member revision/scope changes. Older exact-change requests remain usable through their previous apply action. Direct Staff profile updates remain denied.
+Staff select Request information edit, enter a reason and wait. The assigned BM or DM approves in Approvals. The requesting Staff then opens the approved request and edits once. Requests are invalidated when member revision/scope changes. Older exact-change requests remain usable through their previous apply action. Direct Staff profile updates remain denied.
 
-Staff/BM/DM/Admin can assign or correct an official account number in their scope without activating membership. Approval assigns a number and activates pending membership; duplicate IDs are rejected without partial writes. Admin archive retains the profile and audit while removing it from active lists and revoking any staff assignment.
+BS/BC/BM/DM can assign or correct an official account number in their scope without activating membership. BM screens a pending membership; final assigned-DM approval assigns its number and activates it; duplicate IDs are rejected without partial writes. Admin archive retains the profile and audit while removing it from active lists and revoking any staff assignment.
 
 ## Reports and Staff work activation
 
@@ -106,3 +106,14 @@ For the current OCCCI project with migrations 002–006 already installed, run *
 No extra provider or server secret is required. Email confirmation remains mandatory. Google sign-in uses the existing provider configuration when enabled. Do not change the Supabase Auth email/password requirements: credential creation is a separate identity step from the employee profile form.
 
 Admin uses **Settings → Generate staff invitation** to copy the link and independent code. The link contains only the invitation UUID. Codes are shown once, excluded from REST metadata, and never included in app-generated audit snapshots. Invitations expire in 1–30 days, can be revoked before use, and are consumed atomically when a verified user submits the minimal employee application. Only Admin review assigns a position. BC has branch operational access and BM-reviewed work reports, without manager approval or role-assignment powers.
+
+
+## Current upgrade: BM screening and assigned DM approval
+
+For production with 008 already installed, apply **supabase/migrations/009_branch_approval_workflow.sql** before publishing the `branch-workflow-13` frontend. Do not rerun older migrations over these policies. `supabase/install.sql` includes all migrations and is for fresh projects. The previous upgrade notes describe their original setup; 009 supersedes their membership, financial and audit approval rules.
+
+Admin approves employee applications and assigns positions, and can view all locations. New members and financial submissions undergo branch BM screening followed by final approval by the branch's assigned district DM. BM approval alone never publishes financial balances or activates a membership. BS/BC stay within their assigned branch; work reports remain personal and go to BM. Calendar rows and repeated installments replace the plain-text payment schedule.
+
+Unfinished requests from the old DM/Admin workflow return to BM screening once, with the prior reviewer, note and review time retained in audit. No old request is automatically approved. Completed records stay intact. The migration narrows profiles, report records, audit records/RPCs and linked private documents to the current district/branch assignment. Email display is mirrored from trusted Auth records.
+
+Validate the current behavior with `tests/branch-approval-workflow.mjs` (local PostgreSQL fixtures) and `tests/branch-approval-frontend.mjs` (native DOM forms). Confirm the 009 marker and procedure bodies in SQL Editor after applying.

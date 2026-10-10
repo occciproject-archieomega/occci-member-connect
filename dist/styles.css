@@ -212,3 +212,33 @@ body{font-family:Poppins,Arial,sans-serif;color:var(--text)}h1,h2,h3{font-weight
  .finance-panel .pagination{flex-direction:column;align-items:flex-start}
  .finance-panel .pagination>.flex{width:100%;justify-content:space-between;gap:5px}
 }
+.approval-portals .portal-count{background:#e5e7eb;color:#667085}
+.approval-portals .portal-count.has-pending{background:#f97316;color:#fff}
+.sidebar-end:empty{display:none}
+.directory-email{display:block;color:var(--muted);font-size:11px;line-height:1.5;overflow-wrap:anywhere;margin-top:2px}
+.activity-toolbar{display:flex;justify-content:space-between;align-items:end;gap:16px;margin-bottom:12px}
+.activity-role-tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line);padding-bottom:6px}
+.activity-role-tabs button{padding:8px 13px;border-radius:6px;background:transparent;color:var(--muted);font-size:12px;min-height:38px}
+.activity-role-tabs button[aria-pressed=true]{background:var(--navy);color:white}
+.activity-toolbar>label{font-size:11px;min-width:140px}
+.activity-toolbar select{font-size:12px;padding:7px 10px;min-height:38px;margin-top:3px}
+.financial-sync-dialog{width:min(760px,calc(100% - 24px))}
+.financial-sync-dialog .dialog-body{padding:18px 22px}
+.payment-schedule-editor{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:#fafcff}
+.payment-schedule-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.payment-schedule-head h3{font-size:14px;margin:0;color:var(--navy)}
+.payment-schedule-head span{color:var(--muted);font-size:11px;white-space:nowrap}
+.schedule-generator{display:grid;grid-template-columns:1.2fr 1fr .7fr 1fr auto;gap:8px;align-items:end;margin:10px 0}
+.schedule-generator label,.payment-schedule-row label{font-size:11px;font-weight:500}
+.schedule-generator input,.schedule-generator select,.payment-schedule-row input,.payment-schedule-row select{min-height:38px;padding:7px 8px;font-size:13px;margin-top:4px}
+.schedule-generator button{min-height:38px;white-space:nowrap}
+.payment-schedule-list{list-style:none;padding:0;margin:8px 0 10px;max-height:310px;overflow:auto}
+.payment-schedule-row{display:grid;grid-template-columns:1.3fr 1fr 1fr 36px;gap:8px;align-items:end;padding:8px 0;border-bottom:1px solid var(--line)}
+.payment-schedule-row:last-child{border-bottom:0}
+.schedule-remove{height:38px;width:36px;color:#a64a35}
+@media(max-width:650px){.activity-toolbar{align-items:stretch;flex-direction:column;gap:8px}.activity-role-tabs button{flex:1;padding:7px 9px}.activity-toolbar>label{align-self:flex-end;width:150px}.schedule-generator{grid-template-columns:1fr 1fr}.schedule-generator button{grid-column:1/-1}.payment-schedule-row{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 36px}.payment-schedule-row label:nth-child(3){grid-column:1/3}.schedule-remove{grid-column:3;grid-row:1/3;align-self:center}.financial-sync-dialog .dialog-body{padding:14px}.payment-schedule-editor{padding:10px}.payment-schedule-row input,.payment-schedule-row select{font-size:16px}}
+
+.approval-portals button[aria-current=page] .portal-count{background:#e5e7eb;color:#667085}
+.approval-portals button[aria-current=page] .portal-count.has-pending{background:#f97316;color:#fff}
+
+.profile-financial-summary{border-top:1px solid var(--line);padding-top:16px;margin:16px 0}.profile-financial-summary h2{font-size:15px}.profile-financial-summary .card-head{margin-bottom:8px}
