@@ -9,6 +9,8 @@ Responsive installable PWA for Metro Ormoc Community Multi-Purpose Cooperative, 
 - Multiple private original documents (PDF, Word, Excel, scans or other files) → BM screening → assigned DM approval → savings/loan snapshot synchronization.
 - Branch-filtered typo-tolerant name search and exact account-number lookup.
 - Editable CMS announcements/events/services, branch directory, team assignments and scoped activity logs.
+- Activity entries identify the affected member or employee as well as the acting user. Captured names, positions and employee IDs remain readable after role changes, transfers, profile renaming and archiving.
+- Staff directory names include their positions. BM/DM assignments and staff approvals require a fresh, single-use Admin password confirmation; saving a pending review grants no access.
 - No sample operational data or role simulation.
 
 Serve `dist/` over HTTP locally (`python -m http.server 3000 --directory dist`). Vercel configuration publishes `dist/` from the linked GitHub repository. Follow [SUPABASE-SETUP.md](SUPABASE-SETUP.md) to activate the database workflow; the browser publishable key cannot perform migrations.

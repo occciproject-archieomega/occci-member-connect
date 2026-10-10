@@ -4,13 +4,13 @@ Target project: `hlxcltqnlypptbykirzi`. Production app: https://occci-member-con
 
 ## Production state verified on 2026-10-10
 
-Migrations 002–009 are applied to project `hlxcltqnlypptbykirzi`. Migration 009 was activated on 2026-10-10. Live SQL checks returned true for the migration marker, the exact BM membership screening and BM→DM approval procedure bodies, scoped profile/audit/report/work/document access, trusted email synchronization and the transition of unfinished legacy financial requests. The upgrade does not create invitations, employees or role assignments automatically.
+Migrations 002–011 are applied to project `hlxcltqnlypptbykirzi`. Migrations 010 and 011 were activated on 2026-10-10. Seven live SQL checks returned true for audit identity capture, historical identity backfill, the exact password confirmation procedures, private confirmation storage and implementations, single-use password sessions, unchanged audit scope, and the existing DM financial approval procedure. Migration 009's BM membership screening, BM→DM approval and scoped profile/report/work/document access remain in force. The upgrades do not create invitations, employees or role assignments automatically.
 
 The frontend and database regression suites pass, including private staff invitation and Branch Cashier workflows. Production Site URL and the allowed OAuth redirect remain `https://occci-member-connect.vercel.app/`. Email sign-in identifies invited employees before the minimal employee application form; Google uses the existing provider when configured. Live Google consent and physical iOS/Android testing remain outside this verification.
 
 ## Apply the database changes
 
-If the earlier Supabase connection already works, run **supabase/migrations/002_workflow.sql**, then **supabase/migrations/003_staff_signup.sql**, then **supabase/migrations/004_activity_google.sql** in the Supabase SQL Editor. For a fresh project, run **supabase/install.sql** instead. The migrations run their changes in transactions. Do not rerun the legacy setup.sql alone after upgrading: it contains the former role policies.
+For an existing project, apply any missing migrations from **supabase/migrations/002_workflow.sql** through **supabase/migrations/011_admin_position_confirmation.sql** in numerical order in the Supabase SQL Editor. This production project already has them. For a fresh project, run **supabase/install.sql** instead. The migrations run their changes in transactions. Do not rerun the legacy setup.sql alone after upgrading: it contains the former role policies.
 
 The workflow migration preserves old branch Admin assignments as BM and old Admin Head assignments as cooperative Admin. A migration marker prevents this conversion from running again. Existing profiles remain pending unless already approved; complete legacy missing names/contact/address through the authorized edit workflow. Existing Active profiles without official account numbers must be reconciled in the SQL Editor before financial use.
 
@@ -42,15 +42,15 @@ select id,'Admin',null,null from auth.users where email='REPLACE_WITH_ADMIN_EMAI
 on conflict(user_id) do update set role='Admin',branch_id=null,district=null;
 ```
 
-Sign out and sign back in. Admin can manage Admin (global), DM (district) and BM/Branch Staff (BS)/BC (branch) from CMS → Team. Pending employee applications must be approved in Staff Applications first. User-editable Auth metadata cannot create staff access. Admin remains the final financial approval role; GM is not a separate role.
+Sign out and sign back in. Admin can manage Admin (global), DM (district) and BM/Branch Staff (BS)/BC (branch) from CMS → Team. Pending employee applications must be approved in Staff Applications first. BM/DM assignments require Admin password confirmation. User-editable Auth metadata cannot create staff access. The assigned DM performs final financial approval after BM screening; GM is not a separate role.
 
 ## Acceptance walkthrough
 
 1. Register a member with last/first/middle names, full address, contact number, district and branch, email/password, and one of six visual avatars or a supported photo. Confirm email and sign in. If a photo could not be uploaded or is lost while confirming email, the avatar persists and Profile offers photo upload afterward.
-2. Sign in as a BM or Staff assigned to that branch. Find the pending member in Members, verify actual membership documents, and assign their unique official ID/account number. Admin can also approve. Other branches and Members cannot approve.
-3. Staff proposes a member correction with a reason. A different BM (or Admin) reviews it. The requesting Staff applies the approved exact proposal once. Changes to the underlying profile invalidate stale proposals.
-4. Staff uploads an actual private PDF/JPG/PNG and proposes savings, loan balance/status, annual interest, record date, source reference and payment schedule. A different DM in the district reviews it; a different Admin gives final approval. Only then does the current member financial snapshot change. Stale simultaneous submissions are rejected.
-5. Confirm the member sees their own approved snapshot, schedule and activity. Verify a member in another branch cannot see those records. Admin, DM and BM see cooperative-wide activity; Staff sees branch activity; members see their own activity. This does not expand manager profile-edit or document access. Audit entries retain before/after values and reviewers.
+2. Find the pending member in the assigned branch. BS/BC/BM/DM can assign their unique official ID/account number within their scope. BM screens the membership and the assigned district DM gives final approval. Assigning an ID alone does not activate membership. Admin views this workflow without approving it.
+3. Staff requests permission to edit a member with Reason / Comments / Notes. A different assigned BM or DM reviews it. The requesting Staff then makes one logged edit after approval. Changes to the underlying profile invalidate stale permissions.
+4. Staff uploads original private documents and proposes savings, loan balance/status, annual interest, record date, source reference and calendar payment schedules. BM screens the submission; an independent DM assigned to that district gives final approval through **Approve and synchronize**. Only then does the current member financial snapshot change. Stale simultaneous submissions are rejected.
+5. Confirm the member sees their own approved snapshot, schedule and activity. Admin sees all activity, DM only their district, and BM/BS/BC only their branch; members see their own activity. Audit entries retain affected identities, before/after values and reviewers, including after a staff transfer.
 6. Manage announcements/events/services with branch/district/cooperative scope. Published applicable content appears in the member app; drafts stay in CMS scope. Admin can manage the database branch directory and team assignments. Branches is the last navigation item.
 
 ## Data and deletion
@@ -117,3 +117,15 @@ Admin approves employee applications and assigns positions, and can view all loc
 Unfinished requests from the old DM/Admin workflow return to BM screening once, with the prior reviewer, note and review time retained in audit. No old request is automatically approved. Completed records stay intact. The migration narrows profiles, report records, audit records/RPCs and linked private documents to the current district/branch assignment. Email display is mirrored from trusted Auth records.
 
 Validate the current behavior with `tests/branch-approval-workflow.mjs` (local PostgreSQL fixtures) and `tests/branch-approval-frontend.mjs` (native DOM forms). Confirm the 009 marker and procedure bodies in SQL Editor after applying.
+
+## Current upgrade: affected users in activity logs
+
+For production with 009 installed, apply **supabase/migrations/010_audit_subject_identity.sql**, then **supabase/migrations/011_admin_position_confirmation.sql** before publishing the `audit-identity-14` frontend. The fresh installer includes both. Existing role-assignment entries gain the affected person's name, position and employee ID from their recorded identity or linked profile. New audit entries capture those details separately from the Admin or staff member performing the action. Once captured, the identity is not refreshed by later renaming, transfer or archiving. Existing event scope and read policies remain intact.
+
+The activity list shows **Name · Position** before opening an entry. Expanded details show **Affected user**, the employee ID when recorded, the acting user, notes and the before/after changes. Global actions without an affected account do not show a fictitious person. The staff directory also places the position beside the name.
+
+The assigned DM receives an explicit **Final DM approval** section and **Approve and synchronize** action after BM screening. If the same account submitted or screened the request before becoming DM, the control is disabled with the exact reason: another assigned DM must perform final review. A role change does not remove the separate-reviewer rule. Admin remains unable to approve financial or membership requests.
+
+Migration 011 protects both Team assignment and staff-application approval for BM/DM positions. Admin re-enters their own password; Supabase verifies it in a separate temporary session. A private, expiring confirmation binds that new password session to the exact target, position, branch/district and employee ID, and can be consumed only once. The original Admin session is retained. Passwords and tokens are excluded from CMS payloads, audit records and app storage; the temporary session is signed out after the action. Pending reviews and other positions use their existing workflows.
+
+Test the native UI with `tests/audit-identity-frontend.mjs` and `tests/position-confirmation-frontend.mjs`, and the current database workflow with `tests/branch-approval-workflow.mjs`.

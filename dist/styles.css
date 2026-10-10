@@ -242,3 +242,14 @@ body{font-family:Poppins,Arial,sans-serif;color:var(--text)}h1,h2,h3{font-weight
 .approval-portals button[aria-current=page] .portal-count.has-pending{background:#f97316;color:#fff}
 
 .profile-financial-summary{border-top:1px solid var(--line);padding-top:16px;margin:16px 0}.profile-financial-summary h2{font-size:15px}.profile-financial-summary .card-head{margin-bottom:8px}
+
+/* Affected accounts remain identifiable independently of the actor and current directory. */
+.activity-subject{font-size:12px;line-height:1.4;color:var(--navy);overflow-wrap:anywhere}
+.activity-subject-detail{display:flex;flex-direction:column;gap:3px;margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;overflow-wrap:anywhere}
+.activity-subject-detail>span,.activity-subject-detail>small{font-size:11px;color:var(--muted)}
+.activity-subject-detail>strong{font-size:13px;line-height:1.5;color:var(--navy);font-weight:600}
+
+.directory-name-position{font-size:11px;color:var(--muted);font-weight:600;white-space:normal}
+#adminPositionPasswordField small{font-size:11px;color:var(--muted);line-height:1.5}
+.final-approval-title{font-size:14px;margin:16px 0 8px}
+.financial-final-approval .primary:disabled{opacity:.55;cursor:not-allowed}
