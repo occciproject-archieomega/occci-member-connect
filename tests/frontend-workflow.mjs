@@ -1,7 +1,7 @@
 import vm from 'node:vm';import fs from 'node:fs';import assert from 'node:assert/strict';
 const nodes=new Map();const node=id=>{if(!nodes.has(id))nodes.set(id,{innerHTML:'',style:{},open:false,showModal(){this.open=true},close(){this.open=false}});return nodes.get(id)};
 const ctx=vm.createContext({window:{OCCCI_SUPABASE_CONFIG:{url:'https://example.invalid',publishableKey:'test'},scrollTo(){}},document:{getElementById:node,querySelectorAll:()=>[]},navigator:{},localStorage:{getItem:()=>null},console,setTimeout,Date,URL});
-vm.runInContext(fs.readFileSync('dist/ui.js','utf8')+'\n'+fs.readFileSync('dist/app.js','utf8').replace(/init\(\);\s*$/,''),ctx);
+vm.runInContext(fs.readFileSync('dist/ui.js','utf8')+'\n'+fs.readFileSync('dist/reports.js','utf8')+'\n'+fs.readFileSync('dist/app.js','utf8').replace(/init\(\);\s*$/,''),ctx);
 const run=s=>vm.runInContext(s,ctx);
 run(`S.branches=[{id:'BR-01',name:'Ormoc',district:1,active:true},{id:'BR-11',name:'Alang-Alang',district:2,active:true}];S.authMode='register';render()`);
 const auth=node('main').innerHTML;

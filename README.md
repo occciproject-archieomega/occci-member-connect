@@ -39,3 +39,15 @@ Run native form regression tests with:
 npm install --prefix /tmp/occci-dom-test jsdom
 JSDOM_MODULE=/tmp/occci-dom-test/node_modules/jsdom/lib/api.js node tests/cms-form-submission.mjs
 ```
+
+## Reporting workspace
+
+Workspace tabs appear below the header. Member search supports name matching, exact account/user IDs, district and branch filters, and name/account/district/branch sorting. Record update logs use 20 rows per page; returning to an open edit form preserves values and selected documents.
+
+Reports is available to Admin, DM, BM and Staff. Staff receives a personal My Reports page. Staff saves a daily, seven-day weekly or calendar-month report with actual transaction totals and private source documents, then submits it to the assigned BM. BM approval publishes an immutable approved record to the managerial report register. Returned reports can be corrected and resubmitted. Every action is recorded in scoped report logs.
+
+Admin sees all locations. DM sees assigned district branches. BM sees the assigned branch. Managers have savings/credit snapshots, daily/weekly/monthly CMS activity and approved staff transaction summaries, report status, CSV exports, and registers for assembly, annual compliance, district and cluster reports. Daily/weekly/monthly totals are calculated separately. Approved member snapshots are not historical accounting ledgers or audited financial statements. Compliance records track actual official filing acknowledgements; this app does not submit filings to CDA.
+
+Apply `supabase/migrations/006_reports.sql` after migration 005. It is repeatable and adds report types, managerial registers, staff staging, immutable events and private `occci-reports` storage. Members have no report access. Staff has access only to their own work reports. Files are limited to 10, 10 MB each, 50 MB total.
+
+Verification: `node tests/frontend-workflow.mjs`, `node tests/cms-form-submission.mjs`, `node tests/reports-frontend.mjs`, `node tests/database-workflow.mjs`, `node tests/reports-workflow.mjs`. DOM tests require jsdom; database tests require @electric-sql/pglite, with `JSDOM_MODULE` / `PGLITE_MODULE` pointing to their modules when installed outside the repo.

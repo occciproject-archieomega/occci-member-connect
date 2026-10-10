@@ -94,3 +94,7 @@ Run **supabase/migrations/005_member_documents.sql** after 004 on the existing d
 Staff select Request information edit, enter a reason and wait. BM or DM (or Admin) approves in Approvals. The requesting Staff then opens the approved request and edits once. Requests are invalidated when member revision/scope changes. Older exact-change requests remain usable through their previous apply action. Direct Staff profile updates remain denied.
 
 Staff/BM/DM/Admin can assign or correct an official account number in their scope without activating membership. Approval assigns a number and activates pending membership; duplicate IDs are rejected without partial writes. Admin archive retains the profile and audit while removing it from active lists and revoking any staff assignment.
+
+## Reports and Staff work activation
+
+Run `supabase/migrations/006_reports.sql` in the SQL Editor after migration 005. Refresh the app. This creates the private report register and Staff draft/submission workflow. Staff sends work reports to BM; only BM approval publishes an approved report. Admin/DM monitor the authorized locations. Record official compliance acknowledgements manually after filing through the official system.
