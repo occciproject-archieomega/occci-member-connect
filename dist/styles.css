@@ -90,3 +90,64 @@ body{font-family:Poppins,Arial,sans-serif;color:var(--text)}h1,h2,h3{font-weight
 .applicant-avatar{display:inline-flex;width:44px;height:44px;flex-shrink:0;border-radius:50%;overflow:hidden;background:#eef2f8}.applicant-avatar svg{width:100%;height:100%}
 #generatedStaffLink,#generatedStaffCode{font-size:13px}#generatedStaffCode{font-family:monospace;letter-spacing:.06em}
 @media(max-width:480px){.invite-steps li{font-size:10px;gap:4px}.invite-steps li:before{width:18px;height:18px}.staff-applicant-head .avatar{width:62px;height:62px}.request-list-row .flex{flex-wrap:wrap}}
+
+/* Compact member record: a stable action grid and a distinct activity section. */
+.member-details-dialog{width:min(660px,calc(100% - 32px));max-height:calc(100dvh - 32px);border-radius:14px}
+.member-details-dialog .dialog-head{padding:18px 20px;border-top:3px solid var(--gold);gap:12px}
+.member-details-dialog .dialog-head>.icon-btn{align-self:flex-start;flex-shrink:0}
+.member-details-dialog .dialog-body{padding:18px 20px}
+.member-record-identity{display:flex;align-items:center;gap:14px;min-width:0;flex:1}
+.member-record-identity .avatar{width:64px;height:64px;overflow:hidden;border:1px solid #dbe5f4}
+.member-record-name{min-width:0}
+.member-record-eyebrow{display:block;color:var(--muted);font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}
+.member-details-dialog .dialog-head h2{font-size:20px;font-weight:600;line-height:1.35;overflow-wrap:anywhere;margin:0}
+.member-record-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px;color:var(--muted);font-size:12px}
+.member-record-meta .pill{font-size:10px;line-height:1.4;padding:3px 7px;white-space:normal}
+.member-record-details{grid-template-columns:repeat(2,minmax(0,1fr));margin:0;padding:14px 16px;gap:14px 24px;border:1px solid var(--line);border-radius:9px;background:#f8fafd}
+.member-record-details dt{font-size:10px;font-weight:500;letter-spacing:.45px;line-height:1.4;margin-bottom:4px}
+.member-record-details dd{font-size:13px;font-weight:500;line-height:1.5}
+.member-record-controls{margin-top:18px}
+.member-record-controls>h3{font-size:10px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);margin:0 0 9px}
+.member-record-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.member-record-actions>button{width:100%;min-width:0;min-height:44px;padding:10px 12px;border-radius:7px;justify-content:flex-start;gap:10px;font-size:13px;font-weight:500;line-height:1.35;text-align:left;overflow-wrap:anywhere}
+.member-record-actions>button .i{width:23px;height:23px;stroke-width:1.8}
+.member-record-actions>button.outline{border-color:#dce5f1}
+.member-record-actions>button.outline:hover{background:#f2f6fc;border-color:#aabfdc}
+.member-record-actions>button.primary{font-weight:600}
+.member-record-actions>button.danger{border:1px solid #f0dce0;background:#fff8f8;color:#b03343}
+.member-record-actions>button.danger:hover{background:#fff0f1}
+.member-record-activity{margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+.member-record-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.member-record-section-head h3{margin:0;font-size:14px;font-weight:600}
+.member-record-section-head>span{font-size:11px;color:var(--muted)}
+.member-record-activity .activity-list{margin-top:10px;border-radius:8px}
+.member-record-activity .activity-summary{padding:10px 12px;min-height:56px;gap:10px}
+.member-record-activity .activity-symbol{width:32px;height:32px;border-radius:7px}
+.member-record-activity .activity-label strong{font-size:13px;font-weight:500}
+.member-record-activity .activity-label time{font-size:10px}
+.member-record-activity .activity-pager{border-top:0;margin-top:10px;padding-top:0;gap:10px;font-size:10px}
+.member-record-activity .activity-pager button{min-height:36px;font-size:11px;padding:7px 10px;border-radius:6px}
+.member-record-activity .activity-page-number{font-size:10px}
+.member-record-activity .empty{padding:20px 12px;border:1px dashed var(--line);border-radius:8px;margin-top:10px}
+.member-record-activity .empty .iconbox{display:none}
+.member-record-activity .empty h3{font-size:13px;margin:0 0 4px}
+.member-record-activity .empty p{font-size:11px;margin:0}
+@media(max-width:520px){
+ .member-details-dialog{width:calc(100% - 20px);max-height:calc(100dvh - 20px);border-radius:12px}
+ .member-details-dialog .dialog-head{padding:14px;gap:8px}
+ .member-details-dialog .dialog-body{padding:14px}
+ .member-record-identity{gap:10px;align-items:flex-start}
+ .member-record-identity .avatar{width:52px;height:52px}
+ .member-details-dialog .dialog-head h2{font-size:17px}
+ .member-record-meta{gap:5px;font-size:11px}
+ .member-record-eyebrow{font-size:9px;letter-spacing:.8px}
+ .member-record-details{padding:12px;gap:12px 16px}
+ .member-record-details dd{font-size:13px}
+ .member-record-actions{gap:7px}
+ .member-record-actions>button{padding:9px;gap:7px;min-height:50px;font-size:12px}
+ .member-record-actions>button .i{width:21px;height:21px}
+ .member-record-activity{margin-top:16px;padding-top:14px}
+ .member-record-activity .activity-pager{flex-direction:column;align-items:flex-start}
+ .member-record-activity .activity-pager>.flex{width:100%;justify-content:space-between;gap:6px}
+ .member-record-activity .activity-pager button{min-height:44px}
+}
