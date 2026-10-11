@@ -1,4 +1,4 @@
-# OCCCI Member Connect
+# OCCCI Connect
 
 Responsive installable PWA for Metro Ormoc Community Multi-Purpose Cooperative, with a member app and a role-scoped cooperative CMS. Uses bundled Poppins fonts, OCCCI branding and six visual temporary avatars. Static HTML/CSS/JavaScript; no build step.
 
