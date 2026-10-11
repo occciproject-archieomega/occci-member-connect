@@ -174,3 +174,8 @@ No current official OCCCI deposit/payment capital percentage was verified. [RA 9
 
 ### Manager staff invitations (015)
 Run `supabase/migrations/015_manager_staff_invitations.sql` after 014. BM creates invitations scoped automatically to the assigned branch; DM creates invitations scoped automatically to the assigned district. Managers list/revoke invitations only in their scope; Admin has overall access. Existing global invitations remain Admin-only. Secrets remain hashed and codes are shown once. Employee approval and position assignment stay Admin-only. The frontend requires this migration for manager invitation generation.
+
+### Archived member re-registration (016)
+Apply `supabase/migrations/016_member_reregistration.sql` after 015. The account owner uses **Register again** with the existing email/password; Google accounts can use Continue with Google in the explicit re-registration flow. The endpoint only reactivates the caller’s archived cooperative profile as a pending Member. It never recreates an Auth identity, grants a staff role, deletes financial history or restores membership approval.
+
+Migration 016 also adds invitation-gated staff re-registration. Deleted staff use a fresh Admin/DM/BM invitation plus their existing email/password, complete employee details, and await Admin approval again.
