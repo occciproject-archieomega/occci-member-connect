@@ -179,3 +179,6 @@ Run `supabase/migrations/015_manager_staff_invitations.sql` after 014. BM create
 Apply `supabase/migrations/016_member_reregistration.sql` after 015. The account owner uses **Register again** with the existing email/password; Google accounts can use Continue with Google in the explicit re-registration flow. The endpoint only reactivates the caller’s archived cooperative profile as a pending Member. It never recreates an Auth identity, grants a staff role, deletes financial history or restores membership approval.
 
 Migration 016 also adds invitation-gated staff re-registration. Deleted staff use a fresh Admin/DM/BM invitation plus their existing email/password, complete employee details, and await Admin approval again.
+
+### Removed staff recovery (017)
+Apply `supabase/migrations/017_removed_staff_reregistration.sql` after 016. A deleted staff assignment can leave a non-archived staff profile and old Approved application. The new gate accepts that unassigned former-staff state, including manually assigned staff with an Admin removal audit,  but rejects active assignments and pending applications. Use a fresh invitation and the existing email/password or Google identity.
