@@ -178,3 +178,5 @@ Staff-recovery-26 recognizes existing accounts at the invitation credential step
 Operating-units-27 replaces the workspace branch-only selector with a district-first **Operating units** selector. Choosing a district immediately scopes members, approval queues, financial synchronization, reports and activity to its branches. A dependent Branch selector then narrows the view within that district. Changing district clears stale branch selections and pagination; All assigned districts resets the location scope. Options follow existing Admin/DM/BM/BS/BC permissions. No SQL migration is required.
 
 Staff application/profile labels now use **First name Middle name Last name . Employee number**. Legacy headings that included a numeric employee identifier as the middle-name component display it at the end once; stored identity records are not modified by this presentation fix.
+
+BM-operating-unit-29 shows a Branch Manager’s assigned branch as a fixed Operating units label, with no district or branch dropdown in the workspace toolbar. Admin and DM retain the district-first selectors. Existing branch permissions remain unchanged.
