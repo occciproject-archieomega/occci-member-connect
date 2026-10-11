@@ -1,6 +1,6 @@
 import vm from 'node:vm';import fs from 'node:fs';import assert from 'node:assert/strict';
 const nodes=new Map();const node=id=>{if(!nodes.has(id))nodes.set(id,{innerHTML:'',style:{},open:false,showModal(){this.open=true},close(){this.open=false}});return nodes.get(id)};
-const ctx=vm.createContext({window:{OCCCI_SUPABASE_CONFIG:{url:'https://example.invalid',publishableKey:'test'},scrollTo(){}},document:{getElementById:node,querySelectorAll:()=>[]},navigator:{},localStorage:{getItem:()=>null},console,setTimeout,Date,URL});
+const ctx=vm.createContext({window:{OCCCI_SUPABASE_CONFIG:{url:'https://example.invalid',publishableKey:'test'},scrollTo(){}},document:{getElementById:node,querySelector:()=>null,querySelectorAll:()=>[]},navigator:{},localStorage:{getItem:()=>null},console,setTimeout,Date,URL});
 vm.runInContext(fs.readFileSync('dist/ui.js','utf8')+'\n'+fs.readFileSync('dist/reports.js','utf8')+'\n'+fs.readFileSync('dist/staff-invites.js','utf8')+'\n'+fs.readFileSync('dist/finance.js','utf8')+'\n'+fs.readFileSync('dist/app.js','utf8').replace(/init\(\);\s*$/,''),ctx);
 const run=s=>vm.runInContext(s,ctx);
 run(`S.branches=[{id:'BR-01',name:'Ormoc',district:1,active:true},{id:'BR-11',name:'Alang-Alang',district:2,active:true}];S.authMode='register';render()`);
@@ -31,7 +31,7 @@ run(`S.role='Member';S.me.registration_kind='Staff';S.applications=[{user_id:'st
 ctx.fetch=async()=>({ok:false,json:async()=>({code:'42501'})});
 ctx.FormData=class extends Map{constructor(form){super(Object.entries(form.values));}};
 node('staffRoleField').querySelector=()=>node('requestedRoleSelect');
-ctx.form={values:{registration_kind:'Staff',requested_role:'DM',district:'1',branch_id:'BR-01',first_name:'Archie',last_name:'Omega',middle_name:'E',contact_number:'09123456789',address:'Ormoc City, Leyte',avatar:'man',email:'applicant@example.invalid',password:'test-password'},querySelector:()=>({disabled:false}),reset(){}};
+ctx.form={values:{registration_kind:'Staff',requested_role:'DM',district:'1',branch_id:'BR-01',first_name:'Archie',last_name:'Omega',middle_name:'E',contact_number:'09123456789',address:'Ormoc City, Leyte',avatar:'man',email:'applicant@example.invalid',password:'test-password'},querySelector:()=>({disabled:false}),querySelectorAll:()=>[],reset(){}};
 run(`var capturedSignup;api=async(path,options)=>{capturedSignup={path,options};return {}};S.authMode='register'`);
 await run('submitAuth(form)');
 assert.equal(run('capturedSignup.options.data.data.registration_kind'),'Member');assert.equal(run('capturedSignup.options.data.data.requested_role'),undefined);assert.equal(run('capturedSignup.options.data.data.district'),1);assert.equal(run('capturedSignup.options.data.data.branch_id'),'BR-01');
