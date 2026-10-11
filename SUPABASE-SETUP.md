@@ -10,7 +10,7 @@ Nine frontend and database regression suites pass, including manager uniqueness,
 
 ## Member dashboard / cashier activation status
 
-The `member-finance-cashier-19` frontend and migration **014_member_dashboard_cashier.sql** are prepared and tested locally. Migration 014 has **not yet been applied to the live project**: the Supabase dashboard currently requires sign-in. Existing balances remain readable; cashier posting is disabled until the table/RPC is activated. This is separate from the previously verified 002–013 production state above. Local tests do not establish live authenticated payment behavior.
+The `member-finance-cashier-19` frontend is deployed from commit `9f340adce4debf27de073be45b99a536e858fcda`; all nine live assets exactly match the tested source, and Vercel reports a successful deployment. Migration **014_member_dashboard_cashier.sql** is tested locally and saved in the authenticated Supabase SQL Editor, but **has not been executed**. All eight read-only production compatibility checks returned true: migration 013, cashier upgrade not yet applied, exact submit/review procedures, unchanged Admin password guard, branch/profile access and manager limits. Activating the new BC financial write permission awaits per-action confirmation under the browser rules. Existing balances remain readable; cashier posting is disabled until the table/RPC is activated. This is separate from the previously verified 002–013 production state above. Local tests do not establish live authenticated payment behavior.
 
 ## Apply the database changes
 
