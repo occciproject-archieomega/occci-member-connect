@@ -302,3 +302,35 @@ body{font-family:Poppins,Arial,sans-serif;color:var(--text)}h1,h2,h3{font-weight
 @media(max-width:650px){.team-workspace-tabs{gap:3px}.team-workspace-tabs button{padding:8px 10px;font-size:12px}.team-hierarchy-filters{grid-template-columns:1fr 1fr;gap:10px}.team-hierarchy-filters>label:first-child{grid-column:1/-1}.team-hierarchy-filters input,.team-hierarchy-filters select{font-size:16px;min-width:0;width:100%}.team-role-tabs button{flex:1 1 140px;padding:7px 9px}.team-hierarchy-panel .card-head{align-items:flex-start}.team-person-row{grid-template-columns:38px minmax(0,1fr);gap:8px 10px;padding:10px}.team-person-actions{grid-column:2;justify-content:flex-start}.team-person-actions button{flex:1}.team-section-heading{align-items:flex-start}}
 .final-approval-title{font-size:14px;margin:16px 0 8px}
 .financial-final-approval .primary:disabled{opacity:.55;cursor:not-allowed}
+
+/* Shared CMS alignment and a compact, labeled workspace toolbar. */
+.staff-workspace .topbar{padding-left:28px;padding-right:28px}
+.staff-workspace main{padding:18px 28px 24px}
+.staff-workspace .page-heading{align-items:center;flex-direction:row;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.staff-workspace .page-heading h1{font-size:24px;line-height:1.3}
+.staff-workspace .page-heading p{margin:4px 0 0;font-size:12px}
+.staff-workspace .page-heading>button{min-height:40px;padding:8px 12px;font-size:12px;border-radius:7px}
+.staff-workspace .grid,.staff-workspace .request-grid{gap:14px}
+.staff-workspace .finance-panel+.finance-panel{margin-top:14px}
+.demo-bar.workspace-toolbar{min-height:54px;padding:8px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:nowrap;gap:16px;background:#fff;border-bottom:1px solid var(--line);color:var(--navy)}
+.workspace-context{display:flex;align-items:center;gap:10px;min-width:0;flex-shrink:0}
+.workspace-toolbar .workspace-role{display:inline-flex;align-items:center;justify-content:center;min-height:26px;padding:4px 8px;line-height:1.2;font-size:10px;letter-spacing:.4px;border:1px solid #dbe5f2;border-radius:5px;background:#f0f4fa;color:var(--navy)}
+.workspace-title{font-size:13px;font-weight:600;line-height:1.4;white-space:nowrap}
+.workspace-scope{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex:0 1 340px;min-width:0;margin:0;font-size:11px;font-weight:500;color:#526782}
+.workspace-scope>span{white-space:nowrap}
+.workspace-toolbar .workspace-scope select{width:280px;max-width:100%;min-width:0;min-height:38px;height:38px;margin:0;padding:7px 10px;border:1px solid #d4dfed;border-radius:6px;background:#fafcff;color:var(--navy);font-size:12px;line-height:1.4;box-shadow:none}
+.workspace-toolbar .workspace-scope select:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+@media(max-width:760px){
+ .staff-workspace .topbar{padding-left:20px;padding-right:20px}
+ .staff-workspace main{padding:16px 20px 22px}
+ .demo-bar.workspace-toolbar{padding:8px 20px;gap:12px}
+ .workspace-scope{flex-basis:300px;gap:8px}
+ .workspace-toolbar .workspace-scope select{min-height:44px;height:44px;font-size:16px}
+ .staff-workspace .page-heading>button{min-height:44px}
+}
+@media(max-width:520px){
+ .demo-bar.workspace-toolbar{align-items:stretch;flex-direction:column;gap:8px}
+ .workspace-scope{flex-basis:auto;justify-content:flex-start;gap:10px;width:100%}
+ .workspace-toolbar .workspace-scope select{flex:1;width:100%}
+ .staff-workspace .page-heading{align-items:stretch;flex-direction:column;gap:10px}
+}
