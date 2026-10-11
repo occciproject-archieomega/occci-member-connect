@@ -133,6 +133,8 @@ A Financial sync request with recorded BM screening can receive final approval f
 
 ## Member dashboard and Branch Cashier receipts (014)
 
+Production activation completed on **2026-10-11 UTC** after user approval. All 12 live database checks passed and the anonymous receipt endpoint denied access. See [activation details and verification evidence](SUPABASE-SETUP.md#member-dashboard--cashier-activation-status). No operational payment was posted for testing.
+
 Apply `supabase/migrations/014_member_dashboard_cashier.sql` after 013 to activate cashier records. The fresh installer includes the same update. The frontend remains usable before activation: existing verified savings/loan records are available, share capital is labeled **Not yet verified**, and cashier posting stays disabled with an activation message.
 
 Members see savings, paid-up share capital, outstanding loan principal and their next unpaid installment in one compact, mobile-responsive overview. Overdue installments take priority; paid/cancelled installments are excluded, partial payments show the amount remaining, and a loan without a schedule is labeled explicitly. No snapshot means **Awaiting verified records**, never an invented zero. Payment schedules and receipt history expand on demand, with 20 receipts per page.
