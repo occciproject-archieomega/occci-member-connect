@@ -51,11 +51,11 @@ Sign out and sign back in. Admin can manage Admin (global), DM (district) and BM
 3. Staff requests permission to edit a member with Reason / Comments / Notes. A different assigned BM or DM reviews it. The requesting Staff then makes one logged edit after approval. Changes to the underlying profile invalidate stale permissions.
 4. Staff uploads original private documents and proposes savings, loan balance/status, annual interest, record date, source reference and calendar payment schedules. BM screens the submission; the currently assigned DM for that district gives final approval through **Approve and synchronize**. Only then does the current member financial snapshot change. Stale simultaneous submissions are rejected.
 5. Confirm the member sees their own approved snapshot, schedule and activity. Admin sees all activity, DM only their district, and BM/BS/BC only their branch; members see their own activity. Audit entries retain affected identities, before/after values and reviewers, including after a staff transfer.
-6. Manage announcements/events/services with branch/district/cooperative scope. Published applicable content appears in the member app; drafts stay in CMS scope. Admin can manage the database branch directory and team assignments. Branches is the last navigation item.
+6. Manage announcements/events/services with branch/district/cooperative scope. Published applicable content appears in the member app; drafts stay in CMS scope. Admin manages team assignments. The separate Branches menu is removed; database branches still drive registration, assignments and scoped reporting. Cooperative Reports shows Branch summary and Branch transactions under district tabs, limited to the current report filters and authorized locations.
 
 ## Data and deletion
 
-There are no sample members, balances, loans or CMS announcements. The supplied branch directory contains **52 branches across six districts** (the supplied list has 52, despite the earlier reference to 51). It is an initial database import and is subsequently editable in CMS. Navigation labels, roles, validation rules and brand assets remain application code.
+There are no sample members, balances, loans or CMS announcements. The supplied branch directory contains **52 branches across six districts** (the supplied list has 52, despite the earlier reference to 51). It is an initial database import and can subsequently be maintained by authorized database administration. Navigation labels, roles, validation rules and brand assets remain application code.
 
 Members and content are archived when deleted; branches are deactivated; role assignments can be removed. Financial snapshots are replaced only through reviewed document submissions. Audit history and source documents remain immutable for traceability. Password/email changes and permanent regulatory record deletion require trusted Supabase administration; they are not unrestricted CMS operations.
 
@@ -73,7 +73,7 @@ For the existing production database, run **supabase/migrations/004_activity_goo
 
 All CMS notes inputs use **Reason / Comments / Notes** and save to the existing audited note fields. Team saves canonicalize Admin to global scope, DM to district, and BM/Staff to an active branch. Editing locks the selected identity. New assignments require confirmed email and a completed profile. An Admin can save their own assignment, but cannot demote/remove the last remaining Admin. Assign another Admin before testing your own DM/BM/Staff access; a self-demotion changes your workspace immediately.
 
-Branch Directory opens with district cards and branch counts. Selecting a district shows its branches. Add branch defaults to that district. The database directory remains the source of truth.
+The database branch directory remains the source of truth for registration, staff assignments and district/branch reports. It has no separate workspace menu page. Branch transactions and savings/credit branch summaries use district tabs with the same access limits as the rest of Reports.
 
 ### Enable Google in the project dashboard
 

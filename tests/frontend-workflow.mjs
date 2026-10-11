@@ -16,7 +16,7 @@ assert.equal(run(`memberMatches({full_name:'Maria Santos'},'Dela Cruz')`),false)
 assert.equal(run(`parseSchedule('2026-11-15, 3200, Scheduled')[0].amount`),3200);
 assert.throws(()=>run(`parseSchedule('2026-11-15, , Scheduled')`));assert.throws(()=>run(`parseSchedule('invalid, -1')`));
 run(`S.session={user:{id:'staff'}};S.me={id:'staff',full_name:'Branch Staff',first_name:'Branch',branch_id:'BR-01',avatar:'man',membership_status:'Active'};S.profiles=[S.me];S.assignment={role:'Staff',branch_id:'BR-01'};S.role='Staff';S.page='Overview';render()`);
-assert(node('sidebar').innerHTML.indexOf("go('Branches')")>node('sidebar').innerHTML.indexOf("go('Team')"));
+assert(!node('sidebar').innerHTML.includes("go('Branches')"),'Branches is removed from the workspace menu');
 assert.equal(run(`allowedBranches().length`),1);
 assert.equal(run(`canReview({branch_id:'BR-01',kind:'Profile edit',status:'Pending',submitted_by:'staff'})`),false);
 run(`S.role='BM'`);assert.equal(run(`canReview({branch_id:'BR-01',kind:'Profile edit',status:'Pending',submitted_by:'staff2'})`),true);
@@ -25,7 +25,7 @@ run(`S.role='Admin'`);assert.equal(run(`canReview({branch_id:'BR-11',kind:'Finan
 run(`S.role='Member';S.page='Home';render()`);assert(node('main').innerHTML.includes('Awaiting verified records'));assert(!node('main').innerHTML.includes('₱0.00'));
 for(const page of ['Home','Accounts','Community','Activity','Profile'])run(`S.page='${page}';render()`);
 run(`S.role='Admin';S.assignment={role:'Admin'}`);for(const page of ['Overview','Members','Approvals','Financial sync','Content','Activity','Team','Branches'])run(`S.page='${page}';render()`);
-console.log('PASS: registration fields and visual avatars, district branches, typo/account search, schedule validation, role-specific review controls, Branches last, empty financial states and all CMS/member views.');
+console.log('PASS: registration fields and visual avatars, district branches, typo/account search, schedule validation, role-specific review controls, simplified navigation, empty financial states and all CMS/member views.');
 
 run(`S.role='Member';S.me.registration_kind='Staff';S.applications=[{user_id:'staff',requested_role:'BM',district:1,branch_id:'BR-01',status:'Pending'}];S.page='Home';render()`);assert(node('main').innerHTML.includes('Your OCCCI Staff application'));assert(!node('bottomnav').innerHTML.includes('Accounts'));run(`S.role='Admin';S.page='Team';S.teamTab='Applications';render()`);assert(node('main').innerHTML.includes('Review application'));console.log('PASS: member-only public signup, applicant status and Admin review queue.');
 ctx.fetch=async()=>({ok:false,json:async()=>({code:'42501'})});

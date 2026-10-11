@@ -8,7 +8,7 @@ Responsive installable PWA for Metro Ormoc Community Multi-Purpose Cooperative, 
 - Staff request permission → BM or DM approval → one logged profile edit.
 - Multiple private original documents (PDF, Word, Excel, scans or other files) → BM screening → assigned DM approval → savings/loan snapshot synchronization.
 - Branch-filtered typo-tolerant name search and exact account-number lookup.
-- Editable CMS announcements/events/services, branch directory, team assignments and scoped activity logs.
+- Editable CMS announcements/events/services, team assignments and scoped activity logs, with database-backed branches for registration and reports.
 - Activity entries identify the affected member or employee as well as the acting user. Captured names, positions and employee IDs remain readable after role changes, transfers, profile renaming and archiving.
 - Team contains the OCCCI Staff directory, Staff Applications and Cooperative Hierarchy. Hierarchy positions have district/branch filters, compact grouped rows and 20 assignments per page. Reports and Team omit the four banner approval shortcuts.
 - Staff directory names include their positions. Every Admin staff assignment, staff-application approval, assignment removal and account archive requires a fresh, single-use Admin password confirmation; saving a pending review grants no access.
@@ -29,7 +29,7 @@ PGLITE_MODULE=/tmp/occci-sql-test/node_modules/@electric-sql/pglite/dist/index.j
 
 The PostgreSQL checks use local minimal Supabase schema stubs. Real email delivery, device photo handling, signed storage links and live authenticated acceptance require verification in the configured Supabase project.
 
-The latest upgrade adds district-first Branch Directory, unified reason/comments/notes fields, scoped audit visibility for Admin/DM/BM (enforced by migration 009), safe assignment saving, and Google PKCE sign-in with required profile completion. Apply `supabase/migrations/004_activity_google.sql` after migration 003 and enable the Google provider as described in [SUPABASE-SETUP.md](SUPABASE-SETUP.md). Google OAuth credentials belong in Supabase provider settings, never in frontend code.
+The activity upgrade adds unified reason/comments/notes fields, scoped audit visibility for Admin/DM/BM (enforced by migration 009), safe assignment saving, and Google PKCE sign-in with required profile completion. Apply `supabase/migrations/004_activity_google.sql` after migration 003 and enable the Google provider as described in [SUPABASE-SETUP.md](SUPABASE-SETUP.md). Google OAuth credentials belong in Supabase provider settings, never in frontend code.
 
 ## Member/document upgrade
 
@@ -45,7 +45,7 @@ JSDOM_MODULE=/tmp/occci-dom-test/node_modules/jsdom/lib/api.js node tests/cms-fo
 
 ## Reporting workspace
 
-The CMS header has four approval portals: Staff Applications (Admin only), New Members, Review Staff Edits and Review Actual Balances. New Members opens the pending-member queue; regular workspace navigation remains in the sidebar and mobile menu. Branch summary displays one district at a time through district tabs, respecting report filters and the manager's assigned scope. Network totals and CSV exports keep the selected report scope.
+The CMS header has four approval portals: Staff Applications (Admin only), New Members, Review Staff Edits and Review Actual Balances. New Members opens the pending-member queue; regular workspace navigation remains in the sidebar and mobile menu, without a separate Branches page. Both Branch summary and Branch transactions display one district at a time through district tabs, respecting report filters and the manager's assigned scope. Network totals and CSV exports keep the selected report scope.
 
 Member search supports name matching, exact account/user IDs, district and branch filters, and name/account/district/branch sorting. Record update logs use 20 rows per page; returning to an open edit form preserves values and selected documents.
 
