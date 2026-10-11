@@ -180,3 +180,5 @@ Operating-units-27 replaces the workspace branch-only selector with a district-f
 Staff application/profile labels now use **First name Middle name Last name . Employee number**. Legacy headings that included a numeric employee identifier as the middle-name component display it at the end once; stored identity records are not modified by this presentation fix.
 
 BM-operating-unit-29 shows a Branch Manager’s assigned branch as a fixed Operating units label, with no district or branch dropdown in the workspace toolbar. Admin and DM retain the district-first selectors. Existing branch permissions remain unchanged.
+
+Admin-staff-labels-30 applies the same name-first, employee-number-last identity format to the Admin staff application queue, application review dialog, personnel directory and personnel record heading. Member names and stored records are unchanged.
