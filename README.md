@@ -10,6 +10,7 @@ Responsive installable PWA for Metro Ormoc Community Multi-Purpose Cooperative, 
 - Branch-filtered typo-tolerant name search and exact account-number lookup.
 - Editable CMS announcements/events/services, team assignments and scoped activity logs, with database-backed branches for registration and reports.
 - Activity entries identify the affected member or employee as well as the acting user. Captured names, positions and employee IDs remain readable after role changes, transfers, profile renaming and archiving.
+- Member activity starts behind a compact expandable button. Dates and entries stay hidden until opened; individual entries show their details on demand, with 20 entries per page and pagination keeping the panel open.
 - Team contains the OCCCI Staff directory, Staff Applications and Cooperative Hierarchy. Hierarchy positions have district/branch filters, compact grouped rows and 20 assignments per page. Reports and Team omit the four banner approval shortcuts.
 - Staff directory names include their positions. Every Admin staff assignment, staff-application approval, assignment removal and account archive requires a fresh, single-use Admin password confirmation; saving a pending review grants no access.
 - No sample operational data or role simulation.
@@ -33,7 +34,7 @@ The activity upgrade adds unified reason/comments/notes fields, scoped audit vis
 
 ## Member/document upgrade
 
-Migration `005_member_documents.sql` introduced membership and document operations. Migration 009 now requires BM screening followed by assigned DM activation, with branch-scoped ID assignment for BS/BC/BM/DM, permission-first Staff profile editing and multiple original attachments. ID assignment alone does not activate membership. Archive is an Admin soft archive with activity retained. Native form tests reproduce and prevent the `form.action` handler-name collision that blocked CMS submissions.
+Migration `005_member_documents.sql` introduced membership and document operations. Migration 009 now requires BM screening followed by assigned DM activation, with branch-scoped ID assignment for BS/BC/BM/DM, permission-first Staff profile editing and multiple original attachments. ID assignment alone does not activate membership. Archive is an Admin soft archive with activity retained. Requests whose member is archived or no longer accessible are excluded from synchronization/approval lists, overview totals and notification counters, and cannot be opened for review. Their stored requests, documents, financial snapshots and audit entries remain intact. Native form tests reproduce and prevent the `form.action` handler-name collision that blocked CMS submissions.
 
 Original supporting files remain private: up to 10 files per request, 10 MB per file and 50 MB total. Reviewers see every original filename; approved snapshots retain all attachments. The optional record reference is a ledger/form/statement label and defaults to filenames. Documents download through short-lived signed links.
 
@@ -41,7 +42,10 @@ Run native form regression tests with:
 ```sh
 npm install --prefix /tmp/occci-dom-test jsdom
 JSDOM_MODULE=/tmp/occci-dom-test/node_modules/jsdom/lib/api.js node tests/cms-form-submission.mjs
+JSDOM_MODULE=/tmp/occci-dom-test/node_modules/jsdom/lib/api.js node tests/member-record-frontend.mjs
 ```
+
+The member-record regression exercises native expansion and paging, archived/missing profile exclusion, branch/district scopes, notification counts, preserved history and password-confirmed archive followed by the actual data reload. The member activity/archive frontend update requires no additional SQL migration beyond the existing schema.
 
 ## Reporting workspace
 

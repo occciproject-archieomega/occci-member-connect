@@ -18,10 +18,10 @@ assert.throws(()=>run(`parseSchedule('2026-11-15, , Scheduled')`));assert.throws
 run(`S.session={user:{id:'staff'}};S.me={id:'staff',full_name:'Branch Staff',first_name:'Branch',branch_id:'BR-01',avatar:'man',membership_status:'Active'};S.profiles=[S.me];S.assignment={role:'Staff',branch_id:'BR-01'};S.role='Staff';S.page='Overview';render()`);
 assert(!node('sidebar').innerHTML.includes("go('Branches')"),'Branches is removed from the workspace menu');
 assert.equal(run(`allowedBranches().length`),1);
-assert.equal(run(`canReview({branch_id:'BR-01',kind:'Profile edit',status:'Pending',submitted_by:'staff'})`),false);
-run(`S.role='BM'`);assert.equal(run(`canReview({branch_id:'BR-01',kind:'Profile edit',status:'Pending',submitted_by:'staff2'})`),true);
-run(`S.role='DM';S.assignment={district:2}`);assert.equal(run(`allowedBranches()[0].id`),'BR-11');assert.equal(run(`canReview({branch_id:'BR-11',kind:'Financial sync',status:'BM approved',bm_reviewer:'bm',submitted_by:'staff2'})`),true);
-run(`S.role='Admin'`);assert.equal(run(`canReview({branch_id:'BR-11',kind:'Financial sync',status:'Pending',submitted_by:'staff2'})`),false);assert.equal(run(`canReview({branch_id:'BR-11',kind:'Financial sync',status:'BM approved',submitted_by:'staff2',bm_reviewer:'bm'})`),false);
+assert.equal(run(`canReview({member_id:'staff',branch_id:'BR-01',kind:'Profile edit',status:'Pending',submitted_by:'staff'})`),false);
+run(`S.role='BM'`);assert.equal(run(`canReview({member_id:'staff',branch_id:'BR-01',kind:'Profile edit',status:'Pending',submitted_by:'staff2'})`),true);
+run(`S.profiles.push({id:'district-member',full_name:'District member',branch_id:'BR-11',registration_kind:'Member',membership_status:'Active'});S.role='DM';S.assignment={district:2}`);assert.equal(run(`allowedBranches()[0].id`),'BR-11');assert.equal(run(`canReview({member_id:'district-member',branch_id:'BR-11',kind:'Financial sync',status:'BM approved',bm_reviewer:'bm',submitted_by:'staff2'})`),true);
+run(`S.role='Admin'`);assert.equal(run(`canReview({member_id:'district-member',branch_id:'BR-11',kind:'Financial sync',status:'Pending',submitted_by:'staff2'})`),false);assert.equal(run(`canReview({member_id:'district-member',branch_id:'BR-11',kind:'Financial sync',status:'BM approved',submitted_by:'staff2',bm_reviewer:'bm'})`),false);
 run(`S.role='Member';S.page='Home';render()`);assert(node('main').innerHTML.includes('Awaiting verified records'));assert(!node('main').innerHTML.includes('₱0.00'));
 for(const page of ['Home','Accounts','Community','Activity','Profile'])run(`S.page='${page}';render()`);
 run(`S.role='Admin';S.assignment={role:'Admin'}`);for(const page of ['Overview','Members','Approvals','Financial sync','Content','Activity','Team','Branches'])run(`S.page='${page}';render()`);

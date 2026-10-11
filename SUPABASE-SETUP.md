@@ -57,7 +57,7 @@ Sign out and sign back in. Admin can manage Admin (global), DM (district) and BM
 
 There are no sample members, balances, loans or CMS announcements. The supplied branch directory contains **52 branches across six districts** (the supplied list has 52, despite the earlier reference to 51). It is an initial database import and can subsequently be maintained by authorized database administration. Navigation labels, roles, validation rules and brand assets remain application code.
 
-Members and content are archived when deleted; branches are deactivated; role assignments can be removed. Financial snapshots are replaced only through reviewed document submissions. Audit history and source documents remain immutable for traceability. Password/email changes and permanent regulatory record deletion require trusted Supabase administration; they are not unrestricted CMS operations.
+Members and content are archived when deleted; branches are deactivated; role assignments can be removed. Archived or unavailable member profiles are excluded from active synchronization/approval lists, overview totals and notification counts. Their old requests are retained for history and cannot be opened for review through these queues. Financial snapshots are replaced only through reviewed document submissions. Audit history and source documents remain immutable for traceability. Password/email changes and permanent regulatory record deletion require trusted Supabase administration; they are not unrestricted CMS operations.
 
 Private storage buckets: `occci-documents` (10 MB PDF/JPG/PNG) and `occci-avatars` (5 MB JPG/PNG). Browser-convertible photos are resized to JPEG; unsupported iOS photos fall back to the selected avatar. Signed document/photo links expire after five minutes. Staff documents are immutable after upload; failed submissions can leave orphaned uploads for trusted administrator cleanup.
 
@@ -94,6 +94,8 @@ Run **supabase/migrations/005_member_documents.sql** after 004 on the existing d
 Staff select Request information edit, enter a reason and wait. The assigned BM or DM approves in Approvals. The requesting Staff then opens the approved request and edits once. Requests are invalidated when member revision/scope changes. Older exact-change requests remain usable through their previous apply action. Direct Staff profile updates remain denied.
 
 BS/BC/BM/DM can assign or correct an official account number in their scope without activating membership. BM screens a pending membership; final assigned-DM approval assigns its number and activates it; duplicate IDs are rejected without partial writes. Admin archive retains the profile and audit while removing it from active lists and revoking any staff assignment.
+
+In the member record dialog, **Member activity** is an expandable button. All dates and entries are hidden initially. Open it to see the list, then open an entry for notes and recorded changes. The list retains 20 entries per page and stays expanded when changing pages. This activity/archive frontend update requires no new SQL migration; keep the existing migrations through 013 applied.
 
 ## Reports and Staff work activation
 
