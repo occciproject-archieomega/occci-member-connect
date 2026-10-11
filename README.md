@@ -7,6 +7,8 @@ Responsive installable PWA for Metro Ormoc Community Multi-Purpose Cooperative, 
 - Full member registration, email confirmation and membership verification with unique official account numbers.
 - Staff request permission → BM or DM approval → one logged profile edit.
 - Multiple private original documents (PDF, Word, Excel, scans or other files) → BM screening → assigned DM approval → savings/loan snapshot synchronization.
+- One-screen member financial overview: savings, paid-up share capital, outstanding loan principal and the next unpaid installment.
+- Branch Cashier member search, actual receipt entry, automatic balance/schedule updates and an immutable scoped payment history.
 - Branch-filtered typo-tolerant name search and exact account-number lookup.
 - Editable CMS announcements/events/services, team assignments and scoped activity logs, with database-backed branches for registration and reports.
 - Activity entries identify the affected member or employee as well as the acting user. Captured names, positions and employee IDs remain readable after role changes, transfers, profile renaming and archiving.
@@ -22,6 +24,7 @@ Validation:
 ```sh
 node --check dist/app.js
 node --check dist/ui.js
+node --check dist/finance.js
 node --check dist/sw.js
 node tests/frontend-workflow.mjs
 npm install --prefix /tmp/occci-sql-test @electric-sql/pglite
@@ -126,4 +129,32 @@ Apply `supabase/migrations/013_single_managers_financial_review.sql` after 012 b
 
 A Financial sync request with recorded BM screening can receive final approval from the currently assigned district DM even if that same account submitted or screened it before being reassigned. The recorded BM stage is retained; no second DM is required. Current district authority, original documents, member status, financial revision and required review notes still apply. No pending request is automatically approved. Profile edits and membership approvals retain their separate-reviewer rules.
 
-`tests/manager-workflow.mjs` executes migrations through 013 and the fresh installer against local PostgreSQL fixtures. It verifies manager limits, atomic failures when occupancy changes after confirmation, password-protected transfers, BM-to-DM final finance approval, unchanged balance publication timing, audits/documents, scope restrictions, stale/repeated/missing-screening rejection and migration safety/idempotency. `tests/manager-frontend.mjs` checks native manager selection, conflict messages, pending/reject controls, the enabled final approval action and its real RPC payload.
+`tests/manager-workflow.mjs` exercises the 013 upgrade, then compares the latest upgraded procedures with the fresh installer against local PostgreSQL fixtures. It verifies manager limits, atomic failures when occupancy changes after confirmation, password-protected transfers, BM-to-DM final finance approval, unchanged balance publication timing, audits/documents, scope restrictions, stale/repeated/missing-screening rejection and migration safety/idempotency. `tests/manager-frontend.mjs` checks native manager selection, conflict messages, pending/reject controls, the enabled final approval action and its real RPC payload.
+
+## Member dashboard and Branch Cashier receipts (014)
+
+Apply `supabase/migrations/014_member_dashboard_cashier.sql` after 013 to activate cashier records. The fresh installer includes the same update. The frontend remains usable before activation: existing verified savings/loan records are available, share capital is labeled **Not yet verified**, and cashier posting stays disabled with an activation message.
+
+Members see savings, paid-up share capital, outstanding loan principal and their next unpaid installment in one compact, mobile-responsive overview. Overdue installments take priority; paid/cancelled installments are excluded, partial payments show the amount remaining, and a loan without a schedule is labeled explicitly. No snapshot means **Awaiting verified records**, never an invented zero. Payment schedules and receipt history expand on demand, with 20 receipts per page.
+
+The assigned BC opens **Cashier**, searches their branch's members by name or exact account/ID, and selects a member. The form records the official receipt, payment date, principal, interest, fees, savings deposit, share capital contribution and notes. It previews the resulting balances before submission. Principal alone reduces the loan principal; savings and share capital contributions increase their respective balances. Principal plus interest can be allocated to one unpaid installment; fees and deposits never pay an installment. Partial payments are retained as paid-to-date amounts. Extra principal can be recorded without allocating an installment. This does not recalculate future installments: the branch must review the documented schedule. Unpaid installments remain visible even when principal reaches zero, with **Schedule review required** rather than an unsupported claim that nothing is due. The schedule editor also accepts documented paid-to-date amounts for opening records.
+
+Only an Active member with an official ID and a DM-verified financial snapshot can receive a posted receipt. Share capital starts unknown on legacy snapshots; an actual opening amount must pass BM screening and DM approval before BC contributions are enabled. Leaving the optional opening-capital field blank preserves the existing value. Initial records and later document corrections retain BM→DM review; an authorized BC posts new actual receipts directly against those verified records.
+
+The database locks the member and financial revision and commits the receipt, balances, installment update and activity log together. Overpayment, stale balances, future dates, invalid amounts, duplicate official receipts and cross-branch submissions fail. A repeated identical client reference returns the existing receipt without another update; a changed payload cannot reuse it. Case-insensitive official receipt numbers are unique within a branch. Posted receipts have no edit/delete endpoint. Original documents and references stay attached to the financial snapshot. Corrections use the existing document-review workflow; a pending older snapshot cannot overwrite a newer cashier payment.
+
+Receipt reads respect both the captured branch and the member's current scope: members read their own receipts, BC/BS/BM read their permitted branch, DM reads their district, and Admin reads all. Other staff and managers have a read-only **Cashier receipts** button on verified member records. Database policies and RPC checks enforce these limits independently of the UI.
+
+### Share capital policy
+
+No current official OCCCI percentage of deposits or loan payments was verified. [CDA's Republic Act 9520, Article 75](https://cda.gov.ph/issuances/republic-act-9520/) places the capital build-up program in each cooperative's bylaws. The Act's ownership limit is not a payment deduction rate. This implementation uses documented opening balances and the actual capital amount on each receipt; it applies no assumed percentage, automatic interest calculation or deduction. An OCCCI bylaw/product policy is required before adding percentage-based allocation.
+
+### Verification
+
+```sh
+npm install --prefix /tmp/occci-finance-tests @electric-sql/pglite jsdom
+PGLITE_MODULE=/tmp/occci-finance-tests/node_modules/@electric-sql/pglite/dist/index.js node tests/cashier-workflow.mjs
+JSDOM_MODULE=/tmp/occci-finance-tests/node_modules/jsdom/lib/api.js node tests/cashier-frontend.mjs
+```
+
+These use disposable local PostgreSQL and DOM fixtures. They cover fresh install and repeatable upgrade, nullable capital, BM/DM publication, actual receipt arithmetic, installment allocation, full and partial payoff, retries, receipt uniqueness, stale review rejection, private ledger permissions, archived/member-role/branch isolation, preserved audits/documents, native selection/search/submission, previews, history pagination without losing drafts and pre-activation UI. No real member payment is posted by these tests.

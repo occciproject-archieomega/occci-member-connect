@@ -8,7 +8,7 @@ const w=dom.window,doc=w.document,run=s=>w.eval(s),tick=()=>new Promise(r=>setTi
 w.scrollTo=()=>{};w.OCCCI_SUPABASE_CONFIG={url:'https://example.invalid',publishableKey:'test'};
 w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false};
 const style=doc.createElement('style');style.textContent=fs.readFileSync('dist/styles.css','utf8');doc.head.append(style);
-const script=doc.createElement('script');script.textContent=['ui','reports','staff-invites','app'].map(n=>fs.readFileSync('dist/'+n+'.js','utf8').replace(/init\(\);\s*$/,'')).join('\n');doc.body.append(script);
+const script=doc.createElement('script');script.textContent=['ui','reports','staff-invites','finance','app'].map(n=>fs.readFileSync('dist/'+n+'.js','utf8').replace(/init\(\);\s*$/,'')).join('\n');doc.body.append(script);
 
 const profile=(id,full_name,branch_id='a',extra={})=>({id,full_name,first_name:full_name.split(' ')[0],last_name:full_name.split(' ').at(-1),branch_id,registration_kind:'Member',membership_status:'Active',account_number:'ACC-'+id,avatar:'man',onboarding_complete:true,...extra});
 const admin=profile('admin','Test Administrator',null,{registration_kind:'Staff'});
@@ -76,7 +76,7 @@ w.api=async(path,options={})=>{
  if(path.includes('/occci_change_requests?'))return requests;
  if(path.includes('/rpc/occci_activity'))return audit;
  if(path.includes('/occci_staff_assignments?'))return team;
- if(path.includes('/occci_content?')||path.includes('/occci_staff_applications?'))return [];
+ if(path.includes('/occci_content?')||path.includes('/occci_staff_applications?')||path.includes('/occci_cashier_payments?'))return [];
  throw Error('Unexpected fixture API '+path);
 };
 run(`S.page='Financial sync'`);w.removeDialog('Member','current');
