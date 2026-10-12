@@ -1,19 +1,19 @@
 /* OCCCI studio theme: compact card composition inspired by the supplied video. */
 :root{--navy:#102f59;--blue:#255d95;--gold:#e9c55a;--text:#20364c;--muted:#62717e;--bg:#f2f3ef;--line:#e1e6e3;--radius:16px;--shadow:0 2px 3px #17364a03,0 8px 24px #17364a06;--studio-ease:cubic-bezier(.2,.7,.2,1)}
 body{font-size:13px;background:var(--bg);line-height:1.55}
-.sidebar{width:224px;padding:26px 18px 16px;background:#fafbf7;color:var(--navy);border-right:1px solid #e4e7e0;box-shadow:4px 0 24px #16334a03;overflow-y:auto}
-.brand{gap:10px;padding-bottom:22px;border-bottom:1px solid var(--line)}
+.sidebar{width:224px;padding:26px 18px 16px;background:linear-gradient(180deg,#062963,#05245a);color:#fff;border-right:1px solid #ffffff14;box-shadow:4px 0 24px #16334a08;overflow-y:auto}
+.brand{gap:10px;padding-bottom:22px;border-bottom:1px solid #ffffff20}
 .brand .logo{width:92px;height:92px;border:3px solid #fff;box-shadow:0 4px 16px #193f6320}
-.brand strong{font-size:24px;letter-spacing:.02em;color:var(--navy)}
-.brand small{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5}
+.brand strong{font-size:24px;letter-spacing:.02em;color:#fff}
+.brand small{font-size:11px;color:#c5d5ef;margin-top:4px;line-height:1.5}
 .sidebar .nav-section{margin-top:22px;gap:5px}
-.sidebar .nav-item{position:relative;color:#566579;min-height:43px;font-size:12px;padding:10px 12px;border-radius:10px;gap:11px;transition:color .2s,background .2s,transform .2s var(--studio-ease)}
+.sidebar .nav-item{position:relative;color:#c5d5ef;min-height:43px;font-size:12px;padding:10px 12px;border-radius:10px;gap:11px;transition:color .2s,background .2s,transform .2s var(--studio-ease)}
 .sidebar .nav-item .i{width:21px;height:21px;stroke-width:1.65}
-.sidebar .nav-item:hover{background:#eaf0ee;color:var(--navy);transform:translateX(2px)}
-.sidebar .nav-item.active{background:#e8edea;color:var(--navy);font-weight:600;box-shadow:inset 3px 0 var(--gold)}
-.sidebar .nav-item.active .i{color:#8e6a20}
-.sidebar-end{border-color:var(--line);padding:14px 0 0;margin-top:auto}
-.sidebar-end button{background:#f0f3ee;color:#566579;font-size:12px;margin:0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;min-height:42px}
+.sidebar .nav-item:hover{background:#ffffff14;color:#fff;transform:translateX(2px)}
+.sidebar .nav-item.active{background:#ffffff18;color:#fff;font-weight:600;box-shadow:inset 3px 0 var(--gold)}
+.sidebar .nav-item.active .i{color:var(--gold)}
+.sidebar-end{border-color:#ffffff20;padding:14px 0 0;margin-top:auto}
+.sidebar-end button{background:#ffffff12;color:#c5d5ef;font-size:12px;margin:0;padding:10px 12px;border:1px solid #ffffff20;border-radius:10px;min-height:42px}
 .workspace{margin-left:224px;min-height:100dvh}
 .topbar,.staff-workspace .topbar{position:sticky;top:0;z-index:12;height:auto;min-height:76px;padding:14px 26px;background:#fafbf7f5;backdrop-filter:blur(12px);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:20px}
 .desktop-heading{min-width:0;max-width:440px}
