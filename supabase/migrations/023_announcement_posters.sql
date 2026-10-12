@@ -3,7 +3,7 @@ begin;
 alter table public.occci_content add column if not exists poster_path text;
 alter table public.occci_content add column if not exists poster_original_path text;
 alter table public.occci_content add column if not exists poster_crop jsonb;
-insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types) values('occci-posters','occci-posters',false,5242880,array['image/jpeg','image/png']) on conflict(id) do update set public=false,file_size_limit=5242880,allowed_mime_types=array['image/jpeg','image/png'];
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types) values('occci-posters','occci-posters',false,300000,array['image/webp']) on conflict(id) do update set public=false,file_size_limit=300000,allowed_mime_types=array['image/webp'];
 create or replace function public.occci_can_manage_content(unit_branch text,unit_district smallint) returns boolean language sql stable security definer set search_path='' as $$
  select exists(select 1 from public.occci_profiles p join public.occci_staff_assignments t on t.user_id=p.id where p.id=auth.uid() and p.archived_at is null and p.onboarding_complete and (t.role='Admin' or t.role='DM' and (unit_branch is not null and exists(select 1 from public.occci_branches b where b.id=unit_branch and b.district=t.district) or unit_branch is null and unit_district=t.district) or t.role='BM' and unit_branch is not null and t.branch_id=unit_branch));
 $$;
@@ -32,8 +32,8 @@ begin
   if source_path is null or source_path=display_path or jsonb_typeof(crop) is distinct from 'object' then raise exception 'Original photo and crop settings are required';end if;
   foreach field in array array['zoom','x','y'] loop if jsonb_typeof(crop->field) is distinct from 'number' then raise exception 'Invalid crop settings';end if;end loop;
   if (crop->>'zoom')::numeric not between 1 and 3 or (crop->>'x')::numeric not between -1 and 1 or (crop->>'y')::numeric not between -1 and 1 then raise exception 'Invalid crop settings';end if;
-  if not exists(select 1 from storage.objects where bucket_id='occci-posters' and name=display_path) or (display_path is distinct from current_row.poster_path and display_path not like auth.uid()::text||'/%') then raise exception 'Upload the cropped poster first';end if;
-  if not exists(select 1 from storage.objects where bucket_id='occci-posters' and name=source_path) or (source_path is distinct from current_row.poster_original_path and source_path not like auth.uid()::text||'/%') then raise exception 'Upload the original poster first';end if;
+  if not exists(select 1 from storage.objects where bucket_id='occci-posters' and name=display_path and coalesce(metadata->>'mimetype','')='image/webp' and coalesce((metadata->>'size')::bigint,300001) between 1 and 300000) or (display_path is distinct from current_row.poster_path and display_path not like auth.uid()::text||'/%') then raise exception 'Upload the cropped poster first';end if;
+  if not exists(select 1 from storage.objects where bucket_id='occci-posters' and name=source_path and coalesce(metadata->>'mimetype','')='image/webp' and coalesce((metadata->>'size')::bigint,300001) between 1 and 300000) or (source_path is distinct from current_row.poster_original_path and source_path not like auth.uid()::text||'/%') then raise exception 'Upload the original poster first';end if;
   recipe:=jsonb_build_object('zoom',(crop->>'zoom')::numeric,'x',(crop->>'x')::numeric,'y',(crop->>'y')::numeric,'aspect','16:9');
  elsif source_path is not null or crop is not null then raise exception 'Remove both the poster and its crop settings';end if;
  insert into public.occci_content(id,kind,title,body,branch_id,district,event_date,published,created_by,poster_path,poster_original_path,poster_crop)
