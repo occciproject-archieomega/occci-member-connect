@@ -9,6 +9,11 @@ for(const id of ids){const branch=[foreign,dm2].includes(id)?'BR-11':'BR-01';awa
 for(const [id,role,branch,district] of [[admin,'Admin',null,null],[dm,'DM',null,1],[dm2,'DM',null,2],[bm,'BM','BR-01',null],[bs,'Staff','BR-01',null],[bc,'BC','BR-01',null]])await db.query('insert into public.occci_staff_assignments(user_id,role,branch_id,district) values($1,$2,$3,$4)',[id,role,branch,district]);
 async function as(id,fn){await db.query("select set_config('request.jwt.claim.sub',$1,false)",[id]);await db.exec('set role authenticated');try{return await fn();}finally{await db.exec('reset role');}}
 async function rpc(id,name,args){return (await as(id,()=>db.query(`select public.occci_huddle_${name}(${args.map((_,i)=>'$'+(i+1)).join(',')}) data`,args))).rows[0].data;}
+// Reproduce the screenshot: the old migration rejects open sessions for branch/district roles.
+for(const who of [dm,bm,bs,bc])await assert.rejects(rpc(who,'create',['Open session']),/Your position cannot host this operating unit/);
+await db.query("update public.occci_profiles set registration_kind='Member',membership_status='Pending verification' where id=$1",[admin]);
+await assert.rejects(rpc(admin,'create',['Developer Admin session']),/Your position cannot host this operating unit/,'The developer bootstrap assignment does not change signup category');
+await db.query("update public.occci_profiles set registration_kind='Staff',membership_status='Active' where id=$1",[admin]);
 for(const [who,branch,dist] of [[bs,'BR-01',null],[bc,'BR-01',null],[dm,null,1],[admin,null,null]])assert((await rpc(who,'create',['Fixture hosted session',branch,dist])).id);
 const room=await rpc(bm,'create',['Branch conference','BR-01',null]);assert.equal(room.join_code.length,10);
 await assert.rejects(rpc(member,'create',['Member host','BR-01',null]),/cannot host/);await assert.rejects(rpc(bs,'create',['Other branch','BR-11',null]),/cannot host/);
@@ -62,4 +67,22 @@ const expired=await rpc(bc,'create',['Expired session']);await db.query("update 
 await db.query("update public.occci_profiles set membership_status='Pending verification' where id=$1",[foreign]);assert.deepEqual(await rpc(foreign,'list',[]),[]);await assert.rejects(rpc(foreign,'join',[open.join_code,open.id]),/active OCCCI account/);
 await db.query("update public.occci_profiles set membership_status='Active',archived_at=now() where id=$1",[foreign]);await assert.rejects(rpc(foreign,'join',[open.join_code,open.id]),/active OCCCI account/);
 await db.query('delete from public.occci_staff_assignments where user_id=$1',[bc]);assert.deepEqual(await rpc(bc,'list',[]),[]);await assert.rejects(rpc(bc,'join',[open.join_code,open.id]),/active OCCCI account/);
-await db.close();console.log('PASS: migrations 024/025 repeat safely; five host positions, multiple open sessions, host-only codes, selected-session code verification, cross-district participation, strict financial scope, host moderation, transfers, ending, expiry, rate limits, and deleted/pending account restrictions.');
+// Approved positions must work even when their original registration was as a member.
+await db.query("insert into public.occci_staff_assignments(user_id,role,branch_id) values($1,'BC','BR-01')",[bc]);
+for(const who of [admin,dm,bm,bs,bc])await db.query("update public.occci_profiles set registration_kind='Member',membership_status='Pending verification' where id=$1",[who]);
+for(const who of [admin,dm,bm,bs,bc])await assert.rejects(rpc(who,'create',['Legacy approved official']),/Only assigned OCCCI staff/);
+const before=(await db.query('select id,registration_kind,membership_status from public.occci_profiles order by id')).rows;
+const fix=fs.readFileSync('supabase/migrations/026_occci_huddle_staff_permissions.sql','utf8');await db.exec(fix);await db.exec(fix);
+assert.deepEqual((await db.query('select id,registration_kind,membership_status from public.occci_profiles order by id')).rows,before,'The repair never promotes or modifies profiles');
+assert.equal((await db.query("select pg_get_functiondef('public.occci_huddle_data_scope(text,smallint)'::regprocedure) d")).rows[0].d,dataScope);
+for(const [who,role] of [[admin,'Admin'],[dm,'DM'],[bm,'BM'],[bs,'Staff'],[bc,'BC']]){const p=await rpc(who,'permissions',[]);assert.equal(p.role,role);assert(p.database_ready&&p.can_host&&p.can_join);const created=await rpc(who,'create',['Approved '+role+' session']);assert(created.id);assert.equal(created.branch_id,null);assert.equal(created.district,null);assert.equal((await rpc(who,'list',[])).find(s=>s.id===created.id).join_code,created.join_code);}
+await assert.rejects(rpc(member,'create',['Member attempting to host']),/Only assigned OCCCI staff/);assert.equal((await rpc(member,'permissions',[])).can_host,false);
+await assert.rejects(rpc(bs,'summary',[open.id,'BR-01',null]),/within your assignment/,'The transferred BS cannot use the permission fix to read another branch');
+await assert.rejects(rpc(dm2,'summary',[open.id,'BR-01',null]),/within your assignment/,'DM financial data is still limited to the assigned district');
+await db.query("update public.occci_profiles set archived_at=null,registration_kind='Staff',onboarding_complete=true,membership_status='Active' where id=$1",[foreign]);
+assert.equal((await rpc(foreign,'permissions',[])).can_host,false);await assert.rejects(rpc(foreign,'create',['Unassigned applicant']),/Only assigned OCCCI staff/);await assert.rejects(rpc(foreign,'join',[open.join_code,open.id]),/active OCCCI account/);
+await db.query('delete from public.occci_staff_assignments where user_id=$1',[bc]);assert.equal((await rpc(bc,'permissions',[])).can_host,false);await assert.rejects(rpc(bc,'create',['Revoked staff position']),/Only assigned OCCCI staff/);
+await db.query("update public.occci_profiles set archived_at=now() where id=$1",[bm]);assert.equal((await rpc(bm,'permissions',[])).can_host,false);await assert.rejects(rpc(bm,'create',['Archived BM']),/Only assigned OCCCI staff/);
+await db.query('update public.occci_profiles set onboarding_complete=false where id=$1',[dm]);assert.equal((await rpc(dm,'permissions',[])).can_host,false);
+await db.exec('set role anon');try{await assert.rejects(db.query('select public.occci_huddle_permissions()'),/permission denied/);}finally{await db.exec('reset role');}
+await db.close();console.log('PASS: reproduced old hosting failures; migrations 024/025/026 repeat safely; all five approved positions host regardless of signup category; unassigned, revoked, archived and incomplete accounts stay blocked; financial scope, codes, audit, expiry and moderation remain enforced.');

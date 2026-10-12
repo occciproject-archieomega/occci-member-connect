@@ -2,7 +2,7 @@
 
 The deployed application contains the Sessions panel and LiveKit integration. The session database is required to create/list sessions. LiveKit is required only when joining an audio/video call.
 
-1. In Supabase SQL Editor, run `supabase/migrations/024_occci_huddle.sql` if it has not been applied, then run `supabase/migrations/025_occci_huddle_sessions.sql`. Both migrations can safely be run again. Alternatively, run `supabase/huddle-update.sql`, which includes both in the correct order. Use these migrations for an existing OCCCI database; the complete installer is for a fresh database.
+1. In Supabase SQL Editor, run `supabase/migrations/024_occci_huddle.sql` if it has not been applied, then run `supabase/migrations/025_occci_huddle_sessions.sql` and `supabase/migrations/026_occci_huddle_staff_permissions.sql`. All three migrations can safely be run again. Alternatively, run `supabase/huddle-update.sql`, which includes all three in the correct order. Use these migrations for an existing OCCCI database; the complete installer is for a fresh database.
 2. Create or select your [LiveKit Cloud project](https://cloud.livekit.io/), then get its connection URL, API key and API secret from the project settings. A self-hosted LiveKit server with HTTPS/WSS can also be used.
 3. In the [OCCCI Vercel project's environment settings](https://vercel.com/occciproject-archieomega/occci-member-connect/settings/environment-variables), add these **Production** variables:
 
@@ -16,11 +16,19 @@ The deployed application contains the Sessions panel and LiveKit integration. Th
 4. Redeploy the latest `main` commit so the functions receive the new environment variables.
 5. Sign in as Admin, DM, BM, Branch Staff or BC. Open **OCCCI Huddle** in the top header, enter a session title and select **Create session**. Its card appears in **Sessions**, and a generated code is shown to the host. Create another session to verify that both appear without automatically joining either one. Copy the invitation, then open its portal in a second active OCCCI account and enter the special code. Enable the microphone/camera and check audio in both directions, host mute/allow, screen sharing, chat, and data cards.
 
+## Fix for rejected official positions
+
+If an assigned Admin, DM, BM, BS or BC sees **Your position cannot host this operating unit**, the database is still using migration 024's branch-only hosting rules. Apply the complete `huddle-update.sql` rather than only migration 024. The new readiness check prevents an old list function from enabling an incompatible Create button.
+
+The developer bootstrap grants an Admin assignment without changing the original signup category. An assigned official may therefore still have `registration_kind='Member'` with membership verification pending. Migration 026 accepts the current approved assignment for all five official positions independently of that signup category. It does not promote accounts or change membership approval, branch assignments, or profile records. Archived/deleted and incomplete profiles remain blocked, and unassigned staff applicants cannot host.
+
+An Admin can download the complete SQL update from the setup message on Huddle, run it in Supabase SQL Editor, and select **Refresh** to recheck database readiness. LiveKit credentials are not required to create sessions.
+
 ## Behavior
 
 - All five official positions can create multiple sessions. Creation requires only a title, with no operating-unit selector. It generates a unique code and does not join the host or activate media. Sessions can be created, listed and ended before LiveKit credentials are configured.
 - All active OCCCI accounts see the active Sessions panel. Tapping a session opens a code-entry form. Only the host sees its generated code or invitation controls on the panel. A code from another session cannot join the selected session. New invitation links identify the session and require its code to be entered; older code-containing links remain compatible.
-- Active cooperative members and assigned staff from any district/branch can join with the correct code. A session invitation does not grant access to another unit's records. Unregistered, pending and deleted accounts cannot join.
+- Active cooperative members and assigned staff from any district/branch can join with the correct code. A session invitation does not grant access to another unit's records. Accounts without an active membership or approved staff assignment, and deleted/incomplete profiles, cannot join.
 - The panel checks for session updates every 12 seconds and has a Refresh button. New sessions created by the current user appear immediately; ended and expired sessions disappear. The refresh updates the panel without replacing an in-progress title or code form.
 - The host can mute individual attendees or all attendees, and allow microphones again. Enabling permission never turns on someone else's microphone. Users enable their own microphone/camera.
 - Shared operating-unit data is calculated by Supabase. Cards are visible only to staff authorized for that unit; members receive no cooperative financial summaries. Data is not broadcast as an unrestricted LiveKit packet.
