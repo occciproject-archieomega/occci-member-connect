@@ -32,4 +32,34 @@ await db.query("update public.occci_staff_assignments set branch_id='BR-11' wher
 await rpc(bm,'command',[room.id,'end',null]);assert((await rpc(member,'join',[room.join_code])).error);await assert.rejects(rpc(member,'chat',[room.id,'After ending']),/ended/);
 for(let i=0;i<12;i++)await rpc(foreign,'join',['BADCODE123']);assert((await rpc(foreign,'join',['BADCODE123'])).error.includes('Too many'));
 assert((await db.query("select count(*)::int n from public.occci_audit where action like 'Huddle %'")).rows[0].n>10);
-await db.close();console.log('PASS: repeatable Huddle migration, all five host roles, scoped code joining, host-only mic moderation, rejoin lock, private financial cards, chat, role transfers, session ending, rate limits and audit activity.');
+// The next migration changes conference access while preserving financial authorization.
+const dataScope=(await db.query("select pg_get_functiondef('public.occci_huddle_data_scope(text,smallint)'::regprocedure) d")).rows[0].d;
+const sessionsSql=fs.readFileSync('supabase/migrations/025_occci_huddle_sessions.sql','utf8');await db.exec(sessionsSql);await db.exec(sessionsSql);
+assert.equal((await db.query("select pg_get_functiondef('public.occci_huddle_data_scope(text,smallint)'::regprocedure) d")).rows[0].d,dataScope);
+await db.exec('delete from public.occci_huddle_attempts');
+await db.query("update public.occci_staff_assignments set branch_id='BR-01' where user_id=$1",[bs]);
+for(const who of [admin,dm,bm,bs,bc]){const created=await rpc(who,'create',['Open staff session']);assert.equal(created.branch_id,null);assert.equal(created.district,null);assert.equal((await db.query('select count(*)::int n from public.occci_huddle_attendees where session_id=$1',[created.id])).rows[0].n,0,'Creation does not count as joining');}
+const open=await rpc(bm,'create',['First panel session','BR-11',2]),second=await rpc(bm,'create',['Second panel session']);assert.notEqual(open.join_code,second.join_code);assert.equal(open.branch_id,null);assert.equal(open.district,null);
+await assert.rejects(rpc(member,'create',['Member hosting']),/Only assigned OCCCI staff/);
+const directory=await rpc(foreign,'list',[]);assert(directory.some(s=>s.id===open.id));assert(directory.some(s=>s.id===second.id));assert(directory.every(s=>!('join_code' in s)),'The public authenticated session panel never exposes other hosts codes');
+const own=await rpc(bm,'list',[]);assert.equal(own.find(s=>s.id===open.id).join_code,open.join_code);assert(own.filter(s=>s.host_id!==bm).every(s=>!('join_code' in s)));
+await assert.rejects(rpc(foreign,'context',[open.id]),/access changed/,'A listed session alone does not grant attendance or chat access');
+const wrong=await rpc(foreign,'join',[second.join_code,open.id]);assert(wrong.error);assert.equal((await db.query('select count(*)::int n from public.occci_huddle_attendees where user_id=$1 and session_id in ($2,$3)',[foreign,open.id,second.id])).rows[0].n,0,'A code from another selected session grants no attendance');
+for(const who of [foreign,dm2,member,bm,dm,bs,bc])assert.equal((await rpc(who,'join',[open.join_code,open.id])).id,open.id,'Any active account can join across districts with the correct code');
+assert(!('join_code' in (await rpc(foreign,'context',[open.id])).session));assert.equal((await rpc(bm,'context',[open.id])).session.join_code,open.join_code);
+assert((await rpc(bm,'context',[open.id])).is_host);await assert.rejects(rpc(dm2,'command',[open.id,'end',null]),/Only this Huddle host/);
+await rpc(bm,'command',[open.id,'mute_all',null]);assert((await rpc(foreign,'context',[open.id])).mic_locked);await rpc(bm,'command',[open.id,'allow_all',null]);
+await rpc(bs,'share',[open.id,'BR-01',null]);assert.equal((await rpc(bm,'context',[open.id])).cards.length,1);assert.equal((await rpc(dm2,'context',[open.id])).cards.length,0);assert.equal((await rpc(foreign,'context',[open.id])).cards.length,0);
+await assert.rejects(rpc(dm2,'summary',[open.id,'BR-01',null]),/within your assignment/);await assert.rejects(rpc(bm,'summary',[open.id,'BR-11',null]),/within your assignment/);await assert.rejects(rpc(member,'summary',[open.id,'BR-01',null]),/within your assignment/);
+await db.query("update public.occci_staff_assignments set branch_id='BR-11' where user_id=$1",[bs]);const transferred=await rpc(bs,'context',[open.id]);assert.equal(transferred.cards.length,0,'Transferred staff lose access to their old branch cards');assert(!transferred.participants.find(p=>p.user_id===bs).blocked,'Transfer does not restrict open conference participation');
+await rpc(foreign,'command',[open.id,'leave',null]);await assert.rejects(rpc(foreign,'context',[open.id]),/access changed/,'Leaving revokes attendee reads until code-based rejoining');
+await rpc(foreign,'join',[open.join_code,open.id]);await rpc(foreign,'chat',[open.id,'Cross-district meeting chat']);assert((await rpc(bm,'context',[open.id])).messages.some(m=>m.body==='Cross-district meeting chat'));
+await assert.rejects(as(foreign,()=>db.query('select * from public.occci_huddle_sessions')),/permission denied/);
+await assert.rejects(as(foreign,()=>db.query('select public.occci_huddle_host_scope(null,null)')),/permission denied/);
+await db.exec('set role anon');try{await assert.rejects(db.query('select public.occci_huddle_list()'),/permission denied/);}finally{await db.exec('reset role');}
+await rpc(bm,'command',[second.id,'end',null]);assert(!(await rpc(foreign,'list',[])).some(s=>s.id===second.id));assert((await rpc(foreign,'join',[second.join_code,second.id])).error);assert((await rpc(bm,'context',[open.id])).is_host,'Ending a second session leaves the first one active');
+const expired=await rpc(bc,'create',['Expired session']);await db.query("update public.occci_huddle_sessions set expires_at=now()-interval '1 second' where id=$1",[expired.id]);assert(!(await rpc(member,'list',[])).some(s=>s.id===expired.id));assert((await rpc(member,'join',[expired.join_code,expired.id])).error);
+await db.query("update public.occci_profiles set membership_status='Pending verification' where id=$1",[foreign]);assert.deepEqual(await rpc(foreign,'list',[]),[]);await assert.rejects(rpc(foreign,'join',[open.join_code,open.id]),/active OCCCI account/);
+await db.query("update public.occci_profiles set membership_status='Active',archived_at=now() where id=$1",[foreign]);await assert.rejects(rpc(foreign,'join',[open.join_code,open.id]),/active OCCCI account/);
+await db.query('delete from public.occci_staff_assignments where user_id=$1',[bc]);assert.deepEqual(await rpc(bc,'list',[]),[]);await assert.rejects(rpc(bc,'join',[open.join_code,open.id]),/active OCCCI account/);
+await db.close();console.log('PASS: migrations 024/025 repeat safely; five host positions, multiple open sessions, host-only codes, selected-session code verification, cross-district participation, strict financial scope, host moderation, transfers, ending, expiry, rate limits, and deleted/pending account restrictions.');
