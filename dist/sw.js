@@ -1,4 +1,4 @@
-const CACHE='occci-character-search-v32';
+const CACHE='occci-cashier-pin-v33';
 const ASSETS=['./','./index.html','./app.js','./realtime.js','./realtime-client.js','./reports.js','./staff-invites.js','./finance.js','./supabase-config.js','./ui.js','./styles.css','./occci-logo.png','./icon.svg','./icon-192.png','./icon-512.png','./manifest.json','./fonts/Poppins-Regular.woff','./fonts/Poppins-SemiBold.woff','./fonts/Poppins-Bold.woff'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)));self.skipWaiting()});
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
