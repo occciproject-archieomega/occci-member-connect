@@ -23,13 +23,27 @@ begin
  update public.occci_notifications set read_at=clock_timestamp() where read_at is null and (notification_id is null or id=notification_id) and public.occci_notification_visible(recipient_id,scope_kind,branch_id,district);
 end;$$;
 -- Only private business triggers can create notifications. No client can choose recipients or messages.
+-- Correct earlier personal classifications if this migration has already been applied.
+-- Global Admin queue notices are not personal notices about the recipient's own account.
+create or replace function public.occci_notification_scope_signal() returns trigger language plpgsql security definer set search_path='' as $$
+begin
+ if new.scope_kind is distinct from old.scope_kind or new.branch_id is distinct from old.branch_id or new.district is distinct from old.district then
+  perform public.occci_live_touch('user',null,null,new.recipient_id,false);
+ end if;
+ return null;
+end;$$;
+revoke all on function public.occci_notification_scope_signal() from public,anon,authenticated;
+drop trigger if exists occci_notification_scope_signal on public.occci_notifications;
+create trigger occci_notification_scope_signal after update on public.occci_notifications for each row execute function public.occci_notification_scope_signal();
+update public.occci_notifications set scope_kind='unit',branch_id=null,district=null
+ where scope_kind='personal' and target_type in ('staff_application','team') and recipient_id::text is distinct from target_id;
 create or replace function public.occci_notify_emit(key_value text,roles text[],unit_branch text,unit_district smallint,users uuid[],heading text,message text,target_kind text,target_value text,personal boolean default false) returns void language plpgsql security definer set search_path='' as $$
 declare d smallint:=coalesce(unit_district,(select district from public.occci_branches where id=unit_branch));
 begin
  insert into public.occci_notifications(recipient_id,actor_id,event_key,scope_kind,branch_id,district,title,body,target_type,target_id)
  select t.user_id,auth.uid(),key_value,case when personal then 'personal' else 'unit' end,case when personal then null else unit_branch end,case when personal then null else d end,left(heading,140),left(message,400),target_kind,target_value
  from public.occci_staff_assignments t join public.occci_profiles p on p.id=t.user_id
- where p.archived_at is null and p.onboarding_complete and t.user_id is distinct from auth.uid() and
+ where p.archived_at is null and p.onboarding_complete and t.user_id is distinct from auth.uid() and not (not personal and target_kind='team' and t.user_id::text=target_value) and
  ((t.role=any(roles) and (t.role='Admin' or t.role='DM' and t.district=d or t.role in ('BM','Staff','BC') and t.branch_id=unit_branch)) or
  (t.user_id=any(users) and (personal or t.role='Admin' or t.role='DM' and t.district=d or t.role in ('BM','Staff','BC') and t.branch_id=unit_branch)))
  on conflict(recipient_id,event_key) do nothing;
@@ -58,10 +72,12 @@ begin
   if status='Pending' then roles:=array['BM'];message:='Review the cashier request and its reason.';elsif status='Completed' then roles:=array['BM'];end if;
  elsif source='occci_staff_applications' then
   if operation='UPDATE' and status is not distinct from old_status then return;end if;
-  branch:=null;d:=null;personal:=true;target_kind:='staff_application';users:=array[(v->>'user_id')::uuid];roles:=case when status='Pending' then array['Admin'] else array[]::text[] end;title:='Staff application: '||status;
+  branch:=null;d:=null;personal:=status<>'Pending';target_kind:='staff_application';users:=case when status='Pending' then array[]::uuid[] else array[(v->>'user_id')::uuid] end;roles:=case when status='Pending' then array['Admin'] else array[]::text[] end;title:='Staff application: '||status;
  elsif source='occci_staff_assignments' then
   if operation='UPDATE' and v->>'role' is not distinct from prior->>'role' and branch is not distinct from prior->>'branch_id' and v->>'district' is not distinct from prior->>'district' then return;end if;
-  key_value:=source||':'||(v->>'user_id')||':'||pg_catalog.txid_current()::text;uid:=(v->>'user_id')::uuid;roles:=array['Admin'];users:=array[uid];personal:=true;target_kind:='team';title:='Team assignment updated';message:='A cooperative position or operating unit has changed.';
+  key_value:=source||':'||(v->>'user_id')||':'||pg_catalog.txid_current()::text;uid:=(v->>'user_id')::uuid;target_kind:='team';title:='Team assignment updated';message:='A cooperative position or operating unit has changed.';
+  perform public.occci_notify_emit(key_value,array[]::text[],branch,d,array[uid],title,message,target_kind,target_value,true);
+  perform public.occci_notify_emit(key_value||':admin',array['Admin'],branch,d,array[]::uuid[],title,message,target_kind,target_value,false);return;
  elsif source='occci_cashier_payments' then
   if operation='UPDATE' then return;end if;
   roles:=array['Admin','BM','DM','Staff','BC'];target_kind:='payment';title:='Cashier payment recorded';message:='A receipt was recorded and member balances were updated.';
