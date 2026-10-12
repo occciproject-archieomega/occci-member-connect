@@ -1,9 +1,76 @@
 'use strict';
+// Selection survives authorized live refreshes, but never crosses member workspaces.
+const memberAnnouncementState={context:'',id:null};
+let memberAnnouncementObserver=null;
+function memberPublishedUpdates(){
+ const district=S.branches.find(b=>b.id===S.me?.branch_id)?.district;
+ return S.content.filter(c=>c.published&&!c.archived_at&&(c.branch_id?c.branch_id===S.me?.branch_id:c.district==null||Number(c.district)===Number(district)))
+  .slice().sort((a,b)=>(Date.parse(b.updated_at||b.created_at)||0)-(Date.parse(a.updated_at||a.created_at)||0)||String(a.id).localeCompare(String(b.id)));
+}
+function memberAnnouncements(){return memberPublishedUpdates().filter(c=>c.kind==='Announcement');}
+function currentMemberAnnouncement(rows=memberAnnouncements()){
+ const context=JSON.stringify([S.session?.user?.id,S.role,S.me?.branch_id,S.me?.registration_kind]);
+ if(memberAnnouncementState.context!==context){memberAnnouncementState.context=context;memberAnnouncementState.id=null;}
+ const selected=rows.find(c=>c.id===memberAnnouncementState.id)||rows[0];
+ memberAnnouncementState.id=selected?.id||null;
+ return selected;
+}
+function memberAnnouncementFeature(c){
+ return `<span class="pill blue">Announcement</span><h3 id="currentAnnouncementTitle">${e(c.title)}</h3>${announcementPoster(c)}<p class="content-body announcement-feature-body">${e(c.body)}</p>${c.event_date?`<time class="announcement-date" datetime="${e(c.event_date)}">${e(dateText(c.event_date))}</time>`:''}`;
+}
+function memberAnnouncementPreview(c,selected,copy=false){
+ const tag=copy?'div':'button',control=copy?'':` type="button" aria-pressed="${c.id===selected}" aria-label="Read announcement: ${e(c.title)}"`;
+ return `<${tag} class="announcement-preview${c.id===selected?' is-selected':''}" data-announcement-id="${e(c.id)}"${control}><span class="announcement-preview-label">Announcement${c.event_date?`<time datetime="${e(c.event_date)}">${e(dateText(c.event_date))}</time>`:''}</span>${announcementPoster(c,true)}<strong>${e(c.title)}</strong><span class="announcement-preview-text">${e(c.body)}</span></${tag}>`;
+}
+function memberUpdatesView(withHeading=true){
+ const updates=memberPublishedUpdates(),rows=updates.filter(c=>c.kind==='Announcement'),selected=currentMemberAnnouncement(rows),others=updates.filter(c=>c.kind!=='Announcement');
+ const intro=withHeading?heading('Cooperative updates','Updates from your cooperative.'):'<h2 class="member-updates-title">Cooperative updates</h2>';
+ if(!updates.length)return intro+empty('No content published','The CMS will supply announcements, events and services.');
+ const showcase=selected?`<section class="card announcement-showcase" aria-label="Cooperative announcements" data-member-announcements data-selected-announcement="${e(selected.id)}"><article class="announcement-feature" aria-labelledby="currentAnnouncementTitle"><div class="announcement-feature-content">${memberAnnouncementFeature(selected)}</div><div class="announcement-feature-navigation"><span class="announcement-current-count" role="status">${rows.findIndex(c=>c.id===selected.id)+1} / ${rows.length}</span><div><button type="button" class="outline small" data-announcement-step="-1" aria-label="Previous announcement" ${rows.length<2?'disabled':''}>${icon('up')}</button><button type="button" class="outline small" data-announcement-step="1" aria-label="Next announcement" ${rows.length<2?'disabled':''}>${icon('down')}</button></div></div></article><aside class="announcement-browser" aria-labelledby="announcementBrowserTitle"><div class="announcement-browser-heading"><h3 id="announcementBrowserTitle">All announcements</h3><span class="pill">${rows.length}</span></div><p class="announcement-browser-hint"><span class="announcement-hover-hint">Hover to browse · Select to read</span><span class="announcement-touch-hint">Swipe to browse · Tap to read</span></p><div class="announcement-preview-viewport"><div class="announcement-preview-track" style="--announcement-duration:${Math.max(16,rows.length*5)}s"><div class="announcement-preview-group">${rows.map(c=>memberAnnouncementPreview(c,selected.id)).join('')}</div><div class="announcement-preview-group" data-announcement-copy aria-hidden="true" hidden>${rows.map(c=>memberAnnouncementPreview(c,selected.id,true)).join('')}</div></div></div></aside></section>`:'';
+ return intro+showcase+(others.length?`<section class="member-other-updates">${rows.length?'<h2>Events and services</h2>':''}<div class="request-grid">${others.map(c=>`<article class="card content-card" data-content-id="${e(c.id)}"><span class="pill blue">${e(c.kind)}</span><h3 class="spacer">${e(c.title)}</h3><p class="content-body">${e(c.body)}</p>${c.event_date?`<time class="announcement-date" datetime="${e(c.event_date)}">${e(dateText(c.event_date))}</time>`:''}</article>`).join('')}</div></section>`:'');
+}
+function selectMemberAnnouncement(id,root=document.querySelector('[data-member-announcements]')){
+ if(S.role!=='Member'||S.me?.registration_kind==='Staff'||!hasWorkspaceAccess()||!root?.isConnected)return;
+ const rows=memberAnnouncements(),c=rows.find(row=>row.id===id);
+ if(!c)return;
+ currentMemberAnnouncement(rows);memberAnnouncementState.id=c.id;
+ const feature=root.querySelector('.announcement-feature-content');
+ root.dataset.selectedAnnouncement=c.id;feature.innerHTML=memberAnnouncementFeature(c);
+ root.querySelectorAll('[data-announcement-id]').forEach(n=>{const active=n.dataset.announcementId===id;n.classList.toggle('is-selected',active);if(n.tagName==='BUTTON')n.setAttribute('aria-pressed',String(active));});
+ root.querySelector('.announcement-current-count').textContent=`${rows.findIndex(row=>row.id===id)+1} / ${rows.length}`;
+ loadAnnouncementPosters();
+ if(feature.animate&&!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)feature.animate([{opacity:.55,transform:'translateY(4px)'},{opacity:1,transform:'translateY(0)'}],{duration:200,easing:'cubic-bezier(.2,.7,.2,1)'});
+}
+function initializeMemberAnnouncements(){
+ memberAnnouncementObserver?.disconnect();memberAnnouncementObserver=null;
+ const root=document.querySelector('[data-member-announcements]');if(!root)return;
+ const viewport=root.querySelector('.announcement-preview-viewport'),group=root.querySelector('.announcement-preview-group'),copy=root.querySelector('[data-announcement-copy]');
+ const sync=()=>{if(!root.isConnected)return;const loop=Boolean(window.matchMedia?.('(hover: hover) and (pointer: fine)').matches&&!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches&&group.children.length>1&&group.scrollHeight>viewport.clientHeight+2);root.classList.toggle('is-looping',loop);copy.hidden=!loop||root.classList.contains('is-browsing');};
+ sync();
+ let observer;
+ if(typeof ResizeObserver!=='undefined'){observer=new ResizeObserver(sync);observer.observe(viewport);observer.observe(group);}
+ const media=['(hover: hover) and (pointer: fine)','(prefers-reduced-motion: reduce)'].map(query=>window.matchMedia?.(query)).filter(Boolean);
+ media.forEach(query=>query.addEventListener?.('change',sync));
+ memberAnnouncementObserver={disconnect(){observer?.disconnect();media.forEach(query=>query.removeEventListener?.('change',sync));}};
+ if(root.dataset.announcementsReady)return;root.dataset.announcementsReady='true';
+ root.addEventListener('click',event=>{
+  const preview=event.target.closest('[data-announcement-id]');
+  if(preview&&root.contains(preview)){selectMemberAnnouncement(preview.dataset.announcementId,root);return;}
+  const step=event.target.closest('[data-announcement-step]');if(!step||!root.contains(step))return;
+  const rows=memberAnnouncements(),current=currentMemberAnnouncement(rows);if(rows.length<2)return;
+  const index=rows.findIndex(c=>c.id===current?.id),next=rows[(index+Number(step.dataset.announcementStep)+rows.length)%rows.length];selectMemberAnnouncement(next.id,root);
+ });
+ const manual=()=>{root.classList.add('is-browsing');copy.hidden=true;};
+ viewport.addEventListener('wheel',manual,{passive:true});viewport.addEventListener('touchstart',manual,{passive:true});
+ viewport.addEventListener('focusin',event=>{manual();const preview=event.target.closest('[data-announcement-id]');if(preview)viewport.scrollTop=preview.offsetTop-group.offsetTop;});
+ viewport.addEventListener('focusout',event=>{if(!viewport.contains(event.relatedTarget)){root.classList.remove('is-browsing');viewport.scrollTop=0;sync();}});
+ root.addEventListener('pointerleave',()=>{if(!viewport.contains(document.activeElement)){root.classList.remove('is-browsing');viewport.scrollTop=0;sync();}});
+}
 const posterEditors=new WeakMap(),activePosterEditors=new Set(),posterURLs=new Map();
 function posterContext(){return JSON.stringify([S.session?.user?.id,S.role,S.assignment?.branch_id,S.assignment?.district]);}
-function announcementPoster(c){return c.poster_path?`<figure class="announcement-poster"><img data-content-poster="${e(c.poster_path)}" alt="${e(c.title)} announcement poster" loading="lazy" decoding="async"><figcaption data-poster-message>Loading poster…</figcaption></figure>`:'';}
+function announcementPoster(c,compact=false){const frame=compact?'span':'figure',caption=compact?'span':'figcaption';return c.poster_path?`<${frame} class="announcement-poster"><img data-content-poster="${e(c.poster_path)}" alt="${e(c.title)} announcement poster" loading="lazy" decoding="async"><${caption} data-poster-message>Loading poster…</${caption}></${frame}>`:'';}
 async function posterURL(path){const key=posterContext()+':'+path,entry=posterURLs.get(key);if(entry&&entry.expires>Date.now())return entry.promise;const promise=signedUrl('occci-posters',path);posterURLs.set(key,{promise,expires:Date.now()+240000});try{return await promise;}catch(err){posterURLs.delete(key);throw err;}}
-function loadAnnouncementPosters(){const context=posterContext();document.querySelectorAll('[data-content-poster]').forEach(async img=>{if(img.dataset.posterLoading)return;img.dataset.posterLoading='true';try{const url=await posterURL(img.dataset.contentPoster);if(!img.isConnected||posterContext()!==context)return;img.onload=()=>{const text=img.closest('figure').querySelector('[data-poster-message]');text.hidden=true;};img.onerror=()=>{const text=img.closest('figure').querySelector('[data-poster-message]');text.textContent='Poster unavailable. Reopen this page to try again.';text.hidden=false;};img.src=url;}catch{if(img.isConnected&&posterContext()===context)img.closest('figure').querySelector('[data-poster-message]').textContent='Poster unavailable. Reopen this page to try again.';}});}
+function loadAnnouncementPosters(){const context=posterContext();document.querySelectorAll('[data-content-poster]').forEach(async img=>{if(img.dataset.posterLoading)return;img.dataset.posterLoading='true';try{const url=await posterURL(img.dataset.contentPoster);if(!img.isConnected||posterContext()!==context)return;img.onload=()=>{const text=img.closest('.announcement-poster').querySelector('[data-poster-message]');text.hidden=true;};img.onerror=()=>{const text=img.closest('.announcement-poster').querySelector('[data-poster-message]');text.textContent='Poster unavailable. Reopen this page to try again.';text.hidden=false;};img.src=url;}catch{if(img.isConnected&&posterContext()===context)img.closest('.announcement-poster').querySelector('[data-poster-message]').textContent='Poster unavailable. Reopen this page to try again.';}});}
 function canManageAnnouncement(c){if(S.role==='Admin')return true;if(S.role==='BM')return Boolean(c.branch_id&&c.branch_id===S.assignment?.branch_id);if(S.role==='DM')return c.branch_id?S.branches.some(b=>b.id===c.branch_id&&b.district===S.assignment?.district):c.district===S.assignment?.district;return false;}
 function contentPosterPicker(c){return `<section class="poster-picker full" data-poster-path="${e(c.poster_path||'')}" data-poster-original="${e(c.poster_original_path||'')}" data-poster-crop="${e(JSON.stringify(c.poster_crop||{zoom:1,x:0,y:0}))}" ${c.kind&&c.kind!=='Announcement'?'hidden':''}><div class="poster-picker-heading"><label>Announcement poster (optional)<input type="file" name="poster_file" accept="image/*" onchange="selectAnnouncementPoster(this)"></label><button type="button" class="outline small" data-poster-remove onclick="removeAnnouncementPoster(this)" ${c.poster_path?'':'hidden'}>Remove poster</button></div><p class="hint">The 16:9 preview matches the member home page. Drag the photo or use the crop controls. Photos up to 20 MB are converted to WebP, up to 300 KB per saved image.</p>${c.poster_path?`${announcementPoster(c)}<button type="button" class="outline small" data-poster-edit onclick="editAnnouncementPoster(this)">Adjust existing crop</button>`:''}<p data-poster-status role="status" class="smalltext" hidden></p><div class="poster-editor" data-poster-editor hidden><canvas width="960" height="540" tabindex="0" role="img" aria-label="Announcement poster crop. Drag or use arrow keys to position the photo." onpointerdown="dragAnnouncementPoster(event,this)" onkeydown="posterCropKey(event,this)"></canvas><div class="poster-controls"><label>Zoom<input type="range" data-poster-zoom min="1" max="3" step=".01" value="1" oninput="adjustAnnouncementPoster(this,'zoom')"></label><label>Horizontal position<input type="range" data-poster-x min="-1" max="1" step=".01" value="0" oninput="adjustAnnouncementPoster(this,'x')"></label><label>Vertical position<input type="range" data-poster-y min="-1" max="1" step=".01" value="0" oninput="adjustAnnouncementPoster(this,'y')"></label><button type="button" class="outline small" onclick="resetAnnouncementPoster(this)">Reset crop</button></div></div></section>`;}
 function toggleAnnouncementPoster(form,kind){const root=form.querySelector('.poster-picker');if(root)root.hidden=kind!=='Announcement';}
