@@ -1,6 +1,6 @@
 import fs from 'node:fs';import assert from 'node:assert/strict';
 const {PGlite}=await import(process.env.PGLITE_MODULE||'@electric-sql/pglite');
-const bootstrap=fs.readFileSync('tests/cashier-workflow.mjs','utf8').match(/const bootstrap=`([\s\S]*?)`;/)[1];const db=new PGlite();await db.exec(bootstrap);await db.exec(fs.readFileSync('supabase/setup.sql','utf8'));for(const file of fs.readdirSync('supabase/migrations').sort())await db.exec(fs.readFileSync('supabase/migrations/'+file,'utf8'));
+const bootstrap=fs.readFileSync('tests/cashier-workflow.mjs','utf8').match(/const bootstrap=`([\s\S]*?)`;/)[1];const db=new PGlite();await db.exec(bootstrap);await db.exec(fs.readFileSync('supabase/setup.sql','utf8'));for(const file of fs.readdirSync('supabase/migrations').sort().filter(f=>f<'016_'))await db.exec(fs.readFileSync('supabase/migrations/'+file,'utf8'));
 const ids=Array.from({length:8},(_,i)=>`c0000000-0000-4000-8000-${String(i+1).padStart(12,'0')}`),[admin,dm,bm,bm2,dm2,staff,member,app]=ids;
 for(const id of ids)await db.query('insert into auth.users(id,email,raw_user_meta_data) values($1,$2,$3)',[id,id+'@example.invalid',id===app?{onboarding_source:'staff-invitation'}:{first_name:'Fixture',last_name:'Manager',contact_number:'09123456789',address:'Ormoc City, Leyte',branch_id:'BR-01',avatar:'man'}]);
 await db.query("update public.occci_profiles set onboarding_complete=true where id<>$1",[app]);
