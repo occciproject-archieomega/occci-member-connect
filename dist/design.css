@@ -84,3 +84,8 @@ dialog,.member-details-dialog{border:1px solid #dce5de;border-radius:18px;box-sh
 .studio-queue button>.i:last-child{width:16px;height:16px;transform:rotate(-90deg);color:#96a69f}.studio-queue .portal-count{background:#e5e7eb;color:#667085}.studio-queue .portal-count.has-pending{background:#f97316;color:#fff}.bottomnav button.active:after{display:none}
 
 .bottomnav button .i{width:22px;height:22px}
+
+/* Menu icon feedback stays inside each icon's existing layout box. */
+.sidebar .nav-item>.i{transform-origin:50% 50%;transition:transform .24s var(--studio-ease)}
+@media(hover:hover) and (pointer:fine){.sidebar .nav-item:hover>.i,.sidebar .nav-item:focus-visible>.i{transform:scale(1.12) rotate(-6deg)}}
+@media(prefers-reduced-motion:reduce){.sidebar .nav-item>.i,.sidebar .nav-item:hover>.i,.sidebar .nav-item:focus-visible>.i{transform:none;transition:none}}
