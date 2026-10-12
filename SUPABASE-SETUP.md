@@ -182,3 +182,6 @@ Migration 016 also adds invitation-gated staff re-registration. Deleted staff us
 
 ### Removed staff recovery (017)
 Apply `supabase/migrations/017_removed_staff_reregistration.sql` after 016. A deleted staff assignment can leave a non-archived staff profile and old Approved application. The new gate accepts that unassigned former-staff state, including manually assigned staff with an Admin removal audit,  but rejects active assignments and pending applications. Use a fresh invitation and the existing email/password or Google identity.
+
+### Live updates (018)
+Apply `supabase/migrations/018_live_updates.sql` after 017. It adds RLS-protected OCCCI operational tables to `supabase_realtime` without changing grants or policies; Auth tables and staff invitation secrets are excluded. The app listens for INSERT/UPDATE, refetches through existing authenticated REST policies, and uses scoped audit inserts and periodic ownership checks for deletions. No real payment, promotion or account change is posted during implementation tests.
