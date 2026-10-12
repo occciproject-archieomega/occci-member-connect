@@ -1,0 +1,9 @@
+{
+  "name": "occci-connect",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": "24.x" },
+  "dependencies": { "livekit-server-sdk": "2.19.1" },
+  "scripts": { "check:huddle": "node --test tests/huddle-api.test.mjs" }
+}
