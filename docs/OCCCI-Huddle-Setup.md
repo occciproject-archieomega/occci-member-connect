@@ -67,7 +67,7 @@ Reports:
 - Each viewer is independently checked against district/branch scope and existing report access. Unauthorized viewers see a restricted stage with no report fields or drawings. Financial report contents never travel in the room-wide LiveKit data notification.
 - The verified balances snapshot remains a separate, clearly named tool.
 
-Return to OCCCI Connect uses the exit icon and keeps the call, microphone settings and attendance active. Clicking that active session returns immediately without a code. A new page can use code-free resume only when the database confirms the same signed-in account's active attendance. Explicit Leave or End invalidates resume; new attendees still require the session code. Resuming creates fresh room-only credentials and leaves mic/camera off.
+Return to OCCCI Connect uses the exit icon and keeps the call, microphone settings and attendance active. Clicking that active session returns immediately without a code. A new page can use code-free resume only when the database confirms the same signed-in account's active attendance. Explicit Leave invalidates code-free resume for attendees; the verified host can enter their own active session again without a code. End or expiry blocks everyone. New attendees still require the session code. Resuming creates fresh room-only credentials and leaves mic/camera off.
 
 ## Responsive panels and snapshot deletion (update 028)
 
@@ -76,3 +76,7 @@ The studio fills the complete viewport, including the space previously reserved 
 A local verified balance preview can be removed immediately. Shared snapshots have a delete icon for their author or the host (within the host's financial scope); deletion is checked in Supabase and recorded in the audit log. Other authorized readers can hide a snapshot from their own session view and restore hidden snapshots. Neither action changes source savings/loan records. Deletions are protected against stale context responses restoring the card in the deleting user's view.
 
 Apply migration 028 to enable server-side snapshot deletion. The combined supabase/huddle-studio-update.sql (also deployed at /huddle-studio-update.sql) contains updates 027 and 028 for projects still on update 026. Both updates can be rerun safely. No database-admin credentials are embedded in these files.
+
+## Host return (UI/API update 054)
+
+The session creator can tap their own active session to enter directly, including first entry after creation or re-entry after Leave. The API verifies ownership through the authenticated database context and obtains the session code from that context internally. Client ownership claims or client-supplied codes are ignored for host return. Media credentials remain bound to the authenticated user and exact session. Devices remain off until the host enables them. Ended/expired sessions and accounts whose hosting authority was revoked cannot use host return. This change uses the existing session functions and needs no new SQL migration.
