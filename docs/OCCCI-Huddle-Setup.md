@@ -68,3 +68,11 @@ Reports:
 - The verified balances snapshot remains a separate, clearly named tool.
 
 Return to OCCCI Connect uses the exit icon and keeps the call, microphone settings and attendance active. Clicking that active session returns immediately without a code. A new page can use code-free resume only when the database confirms the same signed-in account's active attendance. Explicit Leave or End invalidates resume; new attendees still require the session code. Resuming creates fresh room-only credentials and leaves mic/camera off.
+
+## Responsive panels and snapshot deletion (update 028)
+
+The studio fills the complete viewport, including the space previously reserved for OCCCI's hidden sidebar. Collaboration starts collapsed. The attendee/chat/data icons in the stage heading expand the selected panel; tapping the active icon or the panel close icon minimizes it. Tablet and phone panels overlay the stage instead of extending the page. Panel toggles preserve media, current tab, and unfinished chat input.
+
+A local verified balance preview can be removed immediately. Shared snapshots have a delete icon for their author or the host (within the host's financial scope); deletion is checked in Supabase and recorded in the audit log. Other authorized readers can hide a snapshot from their own session view and restore hidden snapshots. Neither action changes source savings/loan records. Deletions are protected against stale context responses restoring the card in the deleting user's view.
+
+Apply migration 028 to enable server-side snapshot deletion. The combined supabase/huddle-studio-update.sql (also deployed at /huddle-studio-update.sql) contains updates 027 and 028 for projects still on update 026. Both updates can be rerun safely. No database-admin credentials are embedded in these files.

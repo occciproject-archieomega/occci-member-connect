@@ -136,4 +136,23 @@ await as(member,async()=>{await assert.rejects(db.query('select * from public.oc
 await rpc(member,'command',[studioRoom.id,'leave',null]);assert.equal((await rpc(member,'list',[])).find(s=>s.id===studioRoom.id).can_resume,false);await assert.rejects(rpc(member,'resume',[studioRoom.id]),/access changed|code to join/);
 await rpc(admin,'command',[studioRoom.id,'end',null]);await assert.rejects(rpc(dm,'resume',[studioRoom.id]),/ended|access changed/);
 assert.equal((await db.query("select pg_get_functiondef('public.occci_huddle_data_scope(text,smallint)'::regprocedure) d")).rows[0].d,dataScope);
-await db.close();console.log('PASS: migrations 024–027 repeat safely; studio host permissions, scoped monthly/project reports, report redaction, drawing grants/revocation/stale revision, individual mic unlock, recording notices, resume/leave/end and existing financial boundaries.');
+
+// Snapshot deletion preserves author/host permissions and never touches financial records.
+const snapshotSql=fs.readFileSync('supabase/migrations/028_occci_huddle_snapshot_delete.sql','utf8');await db.exec(snapshotSql);await db.exec(snapshotSql);
+const snapshotRoom=await rpc(admin,'create',['Snapshot lifecycle']);
+for(const who of [admin,dm,bm,member,dm2])await rpc(who,'join',[snapshotRoom.join_code,snapshotRoom.id]);
+const financialBefore=(await db.query('select * from public.occci_financials order by member_id')).rows;
+const ownCard=await rpc(bm,'share',[snapshotRoom.id,'BR-01',null]);
+await assert.rejects(rpc(dm,'delete_card',[snapshotRoom.id,ownCard.id]),/own snapshots/,'An authorized reader cannot delete another attendee snapshot');
+await assert.rejects(rpc(dm2,'delete_card',[snapshotRoom.id,ownCard.id]),/own snapshots/,'Cross-district deletion is denied');
+await assert.rejects(rpc(member,'delete_card',[snapshotRoom.id,ownCard.id]),/own snapshots/,'A member cannot erase financial snapshots');
+assert((await rpc(bm,'delete_card',[snapshotRoom.id,ownCard.id])).ok);
+assert(!(await rpc(admin,'context',[snapshotRoom.id])).cards.some(c=>c.id===ownCard.id));
+assert((await rpc(bm,'delete_card',[snapshotRoom.id,ownCard.id])).ok,'Deletion is idempotent');
+const hostCard=await rpc(bm,'share',[snapshotRoom.id,'BR-01',null]);assert((await rpc(admin,'delete_card',[snapshotRoom.id,hostCard.id])).ok);
+const otherSession=await rpc(admin,'create',['Other snapshot session']);await rpc(admin,'join',[otherSession.join_code,otherSession.id]);const separateCard=await rpc(admin,'share',[otherSession.id,'BR-01',null]);
+await rpc(admin,'delete_card',[snapshotRoom.id,separateCard.id]);assert((await rpc(admin,'context',[otherSession.id])).cards.some(c=>c.id===separateCard.id),'A card ID from another session is never deleted');
+assert.deepEqual((await db.query('select * from public.occci_financials order by member_id')).rows,financialBefore);
+assert((await db.query("select count(*) n from public.occci_audit where action='Huddle snapshot deleted'")).rows[0].n>=2);
+await rpc(bm,'command',[snapshotRoom.id,'leave',null]);await assert.rejects(rpc(bm,'delete_card',[snapshotRoom.id,hostCard.id]),/access changed|Join/);
+await db.close();console.log('PASS: snapshot deletion author/host/scope/audit/source preservation; migrations 024–028 repeat safely; studio host permissions, scoped monthly/project reports, report redaction, drawing grants/revocation/stale revision, individual mic unlock, recording notices, resume/leave/end and existing financial boundaries.');

@@ -75,3 +75,44 @@ body.huddle-studio-page{background:#edf0ec;overflow:hidden}
 .huddle-studio-page .huddle-session-card{border:1.5px solid #738b9d}.huddle-studio-page .huddle-session-host button{width:34px;height:34px;min-width:34px;min-height:34px;padding:6px}.huddle-studio-page .huddle-session-host button .i{width:18px;height:18px}
 .huddle-studio-page .huddle-created button.huddle-icon-action,.huddle-studio-page .huddle-join-form button.huddle-icon-action{width:44px;height:44px;min-height:44px}
 .huddle-report-pages{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:9px}.huddle-report-pages>span{font-size:9px;color:#5a7184;margin-right:auto}
+
+/* Fit Huddle to the whole viewport, independently of OCCCI's sidebar grid. */
+.huddle-studio-page .workspace{width:100%!important;max-width:none!important;display:block;grid-template-rows:none;grid-template-areas:none;overflow:hidden}
+.huddle-studio-page main,.huddle-studio-page .staff-workspace main{width:100%!important;height:100dvh!important;min-height:0!important;max-height:100dvh;margin:0!important;display:flex;flex-direction:column;overflow:hidden}
+.huddle-studio-page .huddle-studio{width:100%;height:100%;min-height:0;max-height:100%;flex:1;overflow:hidden}
+.huddle-studio-page .huddle-studio-header{width:100%;min-height:0}
+.huddle-studio-page .huddle-studio-lobby{width:100%;min-height:0;flex:1;overflow:auto}
+.huddle-studio .huddle-studio-workspace{position:relative;width:100%;min-width:0;min-height:0;flex:1;grid-template-columns:minmax(0,1fr) clamp(250px,23vw,350px) 54px;grid-template-rows:minmax(0,1fr)}
+.huddle-studio.huddle-panel-collapsed .huddle-studio-workspace{grid-template-columns:minmax(0,1fr) 54px}
+.huddle-studio .huddle-stage{min-width:0;min-height:0;grid-column:1;grid-row:1}
+.huddle-studio .huddle-tool-rail{grid-column:-2;grid-row:1;min-height:0}
+.huddle-studio .huddle-collaboration{min-width:0;min-height:0;grid-column:2;grid-row:1;max-height:none}
+.huddle-studio .huddle-collaboration[hidden]{display:none!important}
+.huddle-panel-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0;margin-bottom:7px}
+.huddle-panel-heading .huddle-panel-title{margin:0}
+.huddle-panel-heading .huddle-tool{width:29px;height:29px;min-height:29px;padding:5px}
+.huddle-panel-launchers{display:flex;gap:5px;margin-left:auto;align-items:center;flex-shrink:0}
+.huddle-stage-label{flex-shrink:0;gap:7px}
+.huddle-stage-label>span{flex:1;min-width:0}
+.huddle-stage-label .huddle-panel-launchers .huddle-tool{width:30px;height:30px;min-height:30px;border-color:#688aa7;background:#224663}
+.huddle-stage-label .huddle-panel-launchers .huddle-tool[aria-expanded=true]{background:#f3f8f4;color:#173955;border-color:#00c1d3}
+.huddle-studio .huddle-big-screen{min-height:0;aspect-ratio:auto;flex:1}
+.huddle-studio .huddle-collaboration section{max-height:none}
+.huddle-studio .huddle-collaboration [data-huddle-pane=chat]{display:flex;flex-direction:column;overflow:hidden}
+.huddle-studio .huddle-collaboration [data-huddle-pane=chat][hidden]{display:none}
+.huddle-studio .huddle-chat-list{flex:1;height:auto;min-height:0;max-height:none}
+.huddle-studio .huddle-chat-form{flex-shrink:0}
+.huddle-studio .huddle-snapshot{position:relative;margin:9px 0;border:1px solid #8299a9;border-radius:9px;background:#f8fbf7;overflow:hidden}
+.huddle-studio .huddle-snapshot .huddle-data-card{margin:0;border:0}
+.huddle-snapshot-actions{display:flex;justify-content:flex-end;gap:5px;padding:5px 8px;border-top:1px solid #bbc9cc;background:#eef3ef}
+.huddle-snapshot-actions .huddle-tool{width:30px;height:30px;min-height:30px;padding:6px}
+.huddle-restore-snapshots{display:flex;align-items:center;gap:7px;font-size:9px;color:#526f85;margin:8px 0}
+.huddle-studio .huddle-controls .huddle-tool{flex:0 0 auto}
+@media(max-width:1000px){.huddle-studio .huddle-studio-workspace{grid-template-columns:minmax(0,1fr) 250px 48px}.huddle-studio.huddle-panel-collapsed .huddle-studio-workspace{grid-template-columns:minmax(0,1fr) 48px}}
+@media(max-width:900px){.huddle-studio .huddle-studio-workspace,.huddle-studio.huddle-panel-collapsed .huddle-studio-workspace{grid-template-columns:minmax(0,1fr) 46px}.huddle-studio .huddle-collaboration{position:absolute;top:0;bottom:10px;right:66px;z-index:6;width:min(350px,calc(100% - 85px));grid-area:auto;max-height:none;box-shadow:0 6px 28px #102b4b38;border-color:#385c79}.huddle-studio .huddle-tool-rail{grid-column:2}}
+@media(max-width:760px){body.huddle-studio-page{overflow:hidden}.huddle-studio-page .workspace{height:100dvh;min-height:0}.huddle-studio-page .huddle-studio-header{position:relative;top:auto;height:58px;padding:7px 9px;flex-shrink:0}.huddle-gallery{margin:6px 8px;padding:5px 7px}.huddle-gallery-label{font-size:8px;margin-bottom:4px}.huddle-studio .huddle-video-grid{height:80px;gap:6px}.huddle-studio .huddle-person{width:123px;min-width:123px}.huddle-studio .huddle-camera{height:54px}.huddle-studio .huddle-studio-workspace,.huddle-studio.huddle-panel-collapsed .huddle-studio-workspace{grid-template-columns:minmax(0,1fr) 40px;grid-template-rows:minmax(0,1fr);gap:6px;padding:0 8px max(8px,env(safe-area-inset-bottom))}.huddle-studio .huddle-collaboration{top:0;bottom:max(8px,env(safe-area-inset-bottom));right:54px;width:min(340px,calc(100% - 66px));max-height:none;padding:10px}.huddle-studio .huddle-collaboration section{max-height:none}.huddle-studio .huddle-stage-label{padding:4px 6px;gap:4px}.huddle-stage-label .huddle-panel-launchers{gap:3px}.huddle-stage-label .huddle-panel-launchers .huddle-tool{width:29px;height:30px;min-height:30px}.huddle-stage-label>span{font-size:9px}.huddle-studio .huddle-controls{gap:5px;padding:6px;min-height:0}.huddle-studio .huddle-controls .huddle-tool{width:32px;height:34px;min-height:34px;padding:6px}.huddle-studio .huddle-tool-rail{padding:6px 3px;gap:5px}.huddle-studio .huddle-tool-rail .huddle-tool{width:29px;height:30px;min-height:30px;padding:5px}.huddle-studio .huddle-tool-rail .huddle-color{width:25px;height:25px;min-height:25px}.huddle-studio .huddle-big-screen{min-height:0;aspect-ratio:auto}.huddle-studio .huddle-mic-note{font-size:8px;padding:4px 6px}.huddle-studio>.huddle-setup,.huddle-studio>.huddle-room-error{margin:5px 8px 0;padding:6px 8px;font-size:9px;max-height:64px;overflow:auto}.huddle-studio .huddle-chat-list{height:auto;min-height:0;max-height:none}}
+@media(max-height:520px){.huddle-studio-page .huddle-studio-header{height:46px;padding:5px 10px}.huddle-wordmark .logo{width:32px;height:32px;min-width:32px}.huddle-wordmark strong{font-size:10px}.huddle-wordmark small{font-size:7px}.huddle-studio-title h1{font-size:12px}.huddle-studio-title>span{display:none}.huddle-gallery{margin:5px 8px;padding:4px 6px}.huddle-gallery-label{display:none}.huddle-studio .huddle-video-grid{height:60px}.huddle-studio .huddle-person{width:100px;min-width:100px}.huddle-studio .huddle-camera{height:37px}.huddle-studio .huddle-person-label{height:20px}.huddle-studio .huddle-controls{padding:4px;min-height:0;gap:4px}.huddle-studio .huddle-controls .huddle-tool{width:30px;height:30px;min-height:30px}.huddle-studio .huddle-mic-note{display:none}.huddle-stage-label{min-height:30px}.huddle-studio .huddle-tool-rail{gap:4px;padding:5px 3px}.huddle-studio .huddle-tool-rail .huddle-tool{width:26px;height:26px;min-height:26px;padding:5px}.huddle-studio .huddle-tool-rail .huddle-color{width:22px;height:22px;min-height:22px}}
+.huddle-studio-page [data-huddle-delete],.huddle-snapshot-actions button[aria-label="Delete shared snapshot"]{color:#b63149;border-color:#bd7080;background:#fdf0f2}
+.huddle-studio-page .workspace{height:var(--huddle-height,100dvh)}
+.huddle-studio-page main,.huddle-studio-page .staff-workspace main{height:var(--huddle-height,100dvh)!important;max-height:var(--huddle-height,100dvh)}
+.huddle-keyboard-fit .huddle-gallery{display:none}.huddle-keyboard-fit .huddle-studio-header{height:46px}.huddle-keyboard-fit .huddle-mic-note{display:none}
