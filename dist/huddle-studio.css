@@ -116,3 +116,21 @@ body.huddle-studio-page{background:#edf0ec;overflow:hidden}
 .huddle-studio-page .workspace{height:var(--huddle-height,100dvh)}
 .huddle-studio-page main,.huddle-studio-page .staff-workspace main{height:var(--huddle-height,100dvh)!important;max-height:var(--huddle-height,100dvh)}
 .huddle-keyboard-fit .huddle-gallery{display:none}.huddle-keyboard-fit .huddle-studio-header{height:46px}.huddle-keyboard-fit .huddle-mic-note{display:none}
+
+/* Consistent darker outlines for every Huddle frame. */
+.huddle-studio-page .card,
+.huddle-studio-page .huddle-session-card,
+.huddle-studio-page .huddle-gallery,
+.huddle-studio-page .huddle-stage,
+.huddle-studio-page .huddle-collaboration,
+.huddle-studio-page .huddle-tool-rail,
+.huddle-studio-page .huddle-person,
+.huddle-studio-page .huddle-snapshot,
+.huddle-studio-page .huddle-data-card,
+.huddle-studio-page .huddle-tabs,
+.huddle-studio-page .huddle-presented-report dl>div,
+.huddle-studio-page dialog{border:1.5px solid #36516c}
+.huddle-studio-page .huddle-snapshot>.huddle-data-card{border:0}
+.huddle-studio-page .huddle-session-host,
+.huddle-studio-page .huddle-snapshot-actions,
+.huddle-studio-page .huddle-controls{border-top-color:#36516c}
