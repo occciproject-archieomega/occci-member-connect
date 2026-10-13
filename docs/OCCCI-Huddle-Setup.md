@@ -46,3 +46,25 @@ The frontend and SQL workflow checks are in `tests/huddle-frontend.mjs` and `tes
 The LiveKit browser SDK is loaded only when joining, at the pinned version 2.22.4 from its documented CDN. Creating/listing sessions and regular OCCCI pages do not download it. API responses and credentials are excluded from the PWA's offline cache. A failed service-side join rolls back attendance without ending the saved session. Ending persists in Supabase first; if media-service cleanup is unavailable, clients leave when their authorization check detects the ended session.
 
 References: [LiveKit JavaScript SDK](https://docs.livekit.io/reference/client-sdk-js/), [server SDK](https://docs.livekit.io/reference/server-sdk-js/), [room-service API](https://docs.livekit.io/reference/other/roomservice-api/), [Vercel Node.js Functions](https://vercel.com/docs/functions/runtimes/node-js).
+
+## Huddle Studio (update 027)
+
+Apply supabase/migrations/027_occci_huddle_studio.sql in the same Supabase project after update 026. The production download is /huddle-studio-update.sql. It is safe to run again. The full existing-database Huddle bundle and fresh installer include 027.
+
+The Huddle workspace now fills the screen, with its own header and no OCCCI sidebar, approval portals, workspace toolbar or mobile navigation. A horizontal camera strip sits above the presentation stage, collaboration panel and icon tool rail. Mobile screens stack the collaboration panel below the stage. Buttons retain accessible names and hover hints.
+
+Host controls:
+- Click a camera thumbnail to spotlight that camera for everyone.
+- Present an active screen share, mute all, or allow a selected attendee's microphone. Allowing a mic never starts the device.
+- Grant/revoke an attendee's pen and arrow permission; choose red/cyan ink. Drawings are authorized and persisted by the database, tied to the current presentation revision, and cleared when the presentation changes.
+- Start/stop recording the stage and available participant audio on the host's device. A recording indicator is visible to attendees. The recorder saves WebM (or MP4 if supported) on stop, including when the host leaves. Browser recording support is required; there is no cloud recording upload or LiveKit Egress dependency. Stop/save occurs at 200 MB to limit memory. Recording state has a 45-second lease refreshed every 20 seconds so a closed host tab cannot leave a permanent recording indicator.
+
+Reports:
+- Select an operating unit, month, and monthly transactions or special projects.
+- Monthly results use actual BM-approved monthly work reports. No historical totals are fabricated from current savings/loan snapshots.
+- Special project reports use the editable special-project report type in the CMS register and must be Approved or Filed.
+- A presenter selects the original source record; clients cannot supply financial values.
+- Each viewer is independently checked against district/branch scope and existing report access. Unauthorized viewers see a restricted stage with no report fields or drawings. Financial report contents never travel in the room-wide LiveKit data notification.
+- The verified balances snapshot remains a separate, clearly named tool.
+
+Return to OCCCI Connect uses the exit icon and keeps the call, microphone settings and attendance active. Clicking that active session returns immediately without a code. A new page can use code-free resume only when the database confirms the same signed-in account's active attendance. Explicit Leave or End invalidates resume; new attendees still require the session code. Resuming creates fresh room-only credentials and leaves mic/camera off.

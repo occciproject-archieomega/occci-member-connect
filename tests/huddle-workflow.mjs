@@ -85,4 +85,55 @@ await db.query('delete from public.occci_staff_assignments where user_id=$1',[bc
 await db.query("update public.occci_profiles set archived_at=now() where id=$1",[bm]);assert.equal((await rpc(bm,'permissions',[])).can_host,false);await assert.rejects(rpc(bm,'create',['Archived BM']),/Only assigned OCCCI staff/);
 await db.query('update public.occci_profiles set onboarding_complete=false where id=$1',[dm]);assert.equal((await rpc(dm,'permissions',[])).can_host,false);
 await db.exec('set role anon');try{await assert.rejects(db.query('select public.occci_huddle_permissions()'),/permission denied/);}finally{await db.exec('reset role');}
-await db.close();console.log('PASS: reproduced old hosting failures; migrations 024/025/026 repeat safely; all five approved positions host regardless of signup category; unassigned, revoked, archived and incomplete accounts stay blocked; financial scope, codes, audit, expiry and moderation remain enforced.');
+
+// Studio migration runs safely twice on an established database.
+const studioSql=fs.readFileSync('supabase/migrations/027_occci_huddle_studio.sql','utf8');await db.exec(studioSql);await db.exec(studioSql);
+await db.query("update public.occci_profiles set archived_at=null,onboarding_complete=true,registration_kind='Member',membership_status='Active' where id=any($1::uuid[])",[[admin,dm,bm,bs,member,dm2]]);
+const studioRoom=await rpc(admin,'create',['Studio permissions fixture']);
+for(const who of [admin,dm,bm,bs,member,dm2])await rpc(who,'join',[studioRoom.join_code,studioRoom.id]);
+assert((await rpc(member,'list',[])).find(s=>s.id===studioRoom.id).can_resume);
+assert.equal((await rpc(member,'resume',[studioRoom.id])).id,studioRoom.id);
+await assert.rejects(rpc(member,'studio',[studioRoom.id,'camera',admin,{}]),/Only the host/);
+let studio=await rpc(admin,'studio',[studioRoom.id,'camera',admin,{}]);assert.equal(studio.presentation.target,admin);assert(studio.studio_ready);
+const stroke={revision:studio.presentation.revision,tool:'arrow',color:'cyan',points:[[.1,.2],[.8,.9]]};
+await assert.rejects(rpc(member,'studio',[studioRoom.id,'stroke',null,stroke]),/host must allow/);
+await rpc(admin,'studio',[studioRoom.id,'grant_pen',member,{}]);
+studio=await rpc(member,'studio',[studioRoom.id,'stroke',null,stroke]);assert.equal(studio.strokes.length,1);
+await assert.rejects(rpc(member,'studio',[studioRoom.id,'stroke',null,{...stroke,points:[[2,.2],[.8,.9]]}]),/inside the stage/);
+await assert.rejects(rpc(member,'studio',[studioRoom.id,'stroke',null,{...stroke,color:'purple'}]),/Invalid drawing/);
+await assert.rejects(rpc(member,'studio',[studioRoom.id,'clear',null,{}]),/Only the host/);
+studio=await rpc(admin,'studio',[studioRoom.id,'clear',null,{}]);assert.equal(studio.strokes.length,0);
+await assert.rejects(rpc(member,'studio',[studioRoom.id,'stroke',null,stroke]),/presentation changed/);
+await rpc(admin,'studio',[studioRoom.id,'revoke_pen',member,{}]);
+await assert.rejects(rpc(member,'studio',[studioRoom.id,'stroke',null,{...stroke,revision:studio.presentation.revision}]),/host must allow/);
+await assert.rejects(rpc(member,'studio',[studioRoom.id,'record_start',null,{}]),/Only the host/);
+studio=await rpc(admin,'studio',[studioRoom.id,'record_start',null,{}]);assert(studio.recording);
+assert((await rpc(member,'context',[studioRoom.id])).recording);
+await db.query("update public.occci_huddle_stage set record_expires_at=now()-interval '1 second' where session_id=$1",[studioRoom.id]);assert.equal((await rpc(member,'context',[studioRoom.id])).recording,false,'An expired recording lease clears its indicator');
+await rpc(admin,'studio',[studioRoom.id,'record_ping',null,{}]);assert((await rpc(member,'context',[studioRoom.id])).recording);
+await rpc(admin,'studio',[studioRoom.id,'record_stop',null,{}]);assert.equal((await rpc(member,'context',[studioRoom.id])).recording,false);
+// Mute all and then open one mic leaves everyone else locked and never starts a device.
+await rpc(admin,'command',[studioRoom.id,'mute_all',null]);await rpc(admin,'command',[studioRoom.id,'allow',member]);
+studio=await rpc(member,'context',[studioRoom.id]);assert.equal(studio.mic_locked,false);
+assert.equal((await rpc(dm,'context',[studioRoom.id])).mic_locked,true);
+await rpc(member,'command',[studioRoom.id,'leave',null]);await rpc(member,'join',[studioRoom.join_code,studioRoom.id]);assert.equal((await rpc(member,'context',[studioRoom.id])).mic_locked,true,'New/rejoining attendees inherit Mute all');
+
+await rpc(admin,'command',[studioRoom.id,'allow_all',null]);
+const monthly=(await db.query("insert into public.occci_work_reports(created_by,branch_id,district,frequency,title,period_start,period_end,status,summary,metrics) values($1,'BR-01',1,'Monthly','October branch totals','2026-10-01','2026-10-31','Approved','Approved fixture totals','{\"collections\":12500}') returning id",[bm])).rows[0].id;
+const project=(await db.query("insert into public.occci_reports(type_id,title,branch_id,district,period_start,period_end,status,summary,details,created_by) values('special-project','Branch project','BR-01',1,'2026-10-01','2026-10-31','Approved','Fixture project','{\"budget\":3000}',$1) returning id",[admin])).rows[0].id;
+assert((await rpc(admin,'reports',[studioRoom.id,null,null,'2026-10-01','monthly'])).some(r=>r.id===monthly));
+assert((await rpc(dm,'reports',[studioRoom.id,null,1,'2026-10-01','project'])).some(r=>r.id===project));
+await assert.rejects(rpc(dm2,'reports',[studioRoom.id,'BR-01',null,'2026-10-01','monthly']),/authorized operating unit/);
+await assert.rejects(rpc(member,'reports',[studioRoom.id,'BR-01',null,'2026-10-01','monthly']),/authorized operating unit/);
+studio=await rpc(admin,'studio',[studioRoom.id,'report',null,{report_id:monthly,source:'work'}]);assert.equal(studio.presentation.report.metrics.collections,12500);
+for(const who of [member,dm2,bs]){const privateContext=await rpc(who,'context',[studioRoom.id]);assert(privateContext.presentation.restricted);assert(!privateContext.presentation.report);assert(!JSON.stringify(privateContext.presentation).includes('12500'));assert.deepEqual(privateContext.strokes,[]);}
+assert.equal((await rpc(dm,'context',[studioRoom.id])).presentation.report.id,monthly);
+assert.equal((await rpc(bm,'context',[studioRoom.id])).presentation.report.id,monthly);
+await assert.rejects(rpc(dm2,'studio',[studioRoom.id,'report',null,{report_id:monthly,source:'work'}]),/outside your authorized units/);
+await rpc(admin,'studio',[studioRoom.id,'grant_pen',member,{}]);studio=await rpc(member,'context',[studioRoom.id]);
+await assert.rejects(rpc(member,'studio',[studioRoom.id,'stroke',null,{...stroke,revision:studio.presentation.revision}]),/host must allow/);
+await as(member,async()=>{await assert.rejects(db.query('select * from public.occci_huddle_stage'),/permission denied/);await assert.rejects(db.query('select * from public.occci_huddle_strokes'),/permission denied/);});
+await rpc(member,'command',[studioRoom.id,'leave',null]);assert.equal((await rpc(member,'list',[])).find(s=>s.id===studioRoom.id).can_resume,false);await assert.rejects(rpc(member,'resume',[studioRoom.id]),/access changed|code to join/);
+await rpc(admin,'command',[studioRoom.id,'end',null]);await assert.rejects(rpc(dm,'resume',[studioRoom.id]),/ended|access changed/);
+assert.equal((await db.query("select pg_get_functiondef('public.occci_huddle_data_scope(text,smallint)'::regprocedure) d")).rows[0].d,dataScope);
+await db.close();console.log('PASS: migrations 024–027 repeat safely; studio host permissions, scoped monthly/project reports, report redaction, drawing grants/revocation/stale revision, individual mic unlock, recording notices, resume/leave/end and existing financial boundaries.');
